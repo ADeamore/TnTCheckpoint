@@ -381,7 +381,7 @@ namespace TnTCheckpoint
                                     if (!File.Exists(loc + "\\reset.ini")) File.Create(loc + "\\reset.ini");
 
                                     loc = loc + "\\" + appName + ".exe"; //if you dont do it this way it gives a .dll file instead.
-                                    //System.Diagnostics.Process.Start(loc); //TODO uncomment this
+                                    System.Diagnostics.Process.Start(loc); 
 
                                     // Closes the current process
                                     Environment.Exit(0);
