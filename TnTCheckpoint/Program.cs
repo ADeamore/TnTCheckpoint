@@ -1491,8 +1491,6 @@ namespace TnTCheckpoint
 
         #region commands and messaging
 
-        //TODO send substantially more messages about what the fuck is going on.
-
         private static async ValueTask HandleMessages(Message message)
         {
             if (message.ChannelId != ChannelID) return;
