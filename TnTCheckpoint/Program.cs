@@ -95,6 +95,7 @@ namespace TnTCheckpoint
 
         #endregion
 
+        #region declarations
         public static RECT d2window = new RECT();
         private static Process D2Process;
         private static bool startup = true;
@@ -146,34 +147,7 @@ namespace TnTCheckpoint
 
         public const string emptybar = "                                                                                                                                          ";
 
-        protected static void UpdateTextDisplay()
-        {
-            Console.SetCursorPosition(0, 0);
-            Console.Write(statusheader + emptybar);
-            Console.SetCursorPosition(0, 1);
-            Console.Write("     " + statussubtext + emptybar);
-            Console.SetCursorPosition(0, 3);
-            Console.Write("Color Detection: " + runningupdatedetection.ToString() + emptybar);
-            Console.SetCursorPosition(0, 4);
-            Console.Write("     Update count: " + visualupdates + "/" + visualupdatestotal + emptybar);
-            Console.SetCursorPosition(0, 5);
-            Console.Write("      At location: " + visualupdatesx + "," + visualupdatesy + emptybar);
-            Console.SetCursorPosition(0, 6);
-            Console.Write("You may hold Right Alt for 5 seconds at any time to kill the macro and Destiny2." + emptybar);
-            for (int i = 7; i < 15; i++)
-            {
-                Console.SetCursorPosition(0, i);
-                Console.Write($"{"\r".PadRight(Console.BufferWidth)}\r");
-            }
-            Console.SetCursorPosition(0, 7);
-        }
-
-        public static async void UpdateStatusBar(string status, UserStatusType stat)
-        {
-            await client.UpdatePresenceAsync(
-                new PresenceProperties(stat).WithActivities([new UserActivityProperties("ignored", UserActivityType.Custom).WithState(status)] )
-            );
-        }
+        #endregion
 
         static void Main()
         {
@@ -263,10 +237,10 @@ namespace TnTCheckpoint
                         resp = Console.ReadLine();
                     }
 
-                    if(resp.ToLower() == "launch")
+                    if (resp.ToLower() == "launch")
                     {
                         string[] strings = File.ReadAllLines(path + "\\configuration.ini");
-                        if(strings.Length != 2)
+                        if (strings.Length != 2)
                         {
                             File.Delete(path + "\\configuration.ini");
                             continue;
@@ -296,7 +270,7 @@ namespace TnTCheckpoint
                             continue;
                         }
                     }
-                    if(resp.ToLower() == "reconfig")
+                    if (resp.ToLower() == "reconfig")
                     {
                         File.Delete(path + "\\configuration.ini");
                         continue;
@@ -395,10 +369,10 @@ namespace TnTCheckpoint
                                                     UpdateTextDisplay();
                                                     PrepCharMenu();
                                                 }
-                                                else if(!initializing)
+                                                else if (!initializing)
                                                 {
                                                     //reset stuff
-                                                    if(DateTime.Now > ResetTime)
+                                                    if (DateTime.Now > ResetTime)
                                                     {
                                                         //reset has happened. need to restart everything to just scrub the surface clean and reset.
 
@@ -488,11 +462,39 @@ namespace TnTCheckpoint
             Thread.Sleep(Timeout.Infinite);
         }
 
-        public static void KillProcess()
+        #region user communication
+        protected static void UpdateTextDisplay()
         {
-            D2Process.Kill();
-            Environment.Exit(0);
+            Console.SetCursorPosition(0, 0);
+            Console.Write(statusheader + emptybar);
+            Console.SetCursorPosition(0, 1);
+            Console.Write("     " + statussubtext + emptybar);
+            Console.SetCursorPosition(0, 3);
+            Console.Write("Color Detection: " + runningupdatedetection.ToString() + emptybar);
+            Console.SetCursorPosition(0, 4);
+            Console.Write("     Update count: " + visualupdates + "/" + visualupdatestotal + emptybar);
+            Console.SetCursorPosition(0, 5);
+            Console.Write("      At location: " + visualupdatesx + "," + visualupdatesy + emptybar);
+            Console.SetCursorPosition(0, 6);
+            Console.Write("You may hold Right Alt for 5 seconds at any time to kill the macro and Destiny2." + emptybar);
+            for (int i = 7; i < 15; i++)
+            {
+                Console.SetCursorPosition(0, i);
+                Console.Write($"{"\r".PadRight(Console.BufferWidth)}\r");
+            }
+            Console.SetCursorPosition(0, 7);
         }
+
+        public static async void UpdateStatusBar(string status, UserStatusType stat)
+        {
+            await client.UpdatePresenceAsync(
+                new PresenceProperties(stat).WithActivities([new UserActivityProperties("ignored", UserActivityType.Custom).WithState(status)] )
+            );
+        }
+
+        #endregion
+
+        #region initialization
 
         public static void InitializeCheckpoints()
         {
@@ -678,80 +680,6 @@ namespace TnTCheckpoint
             await client.StartAsync();
         }
 
-        private static async void AwaitColorChange(double percentageposx, double percentageposy, int count)
-        {
-            long starttime = DateTime.Now.AddSeconds(60).Ticks;
-            int colorchangecount = 0;
-            Point TempLocation = ConvertAspectRatioCoords(percentageposx, percentageposy);
-            Color TempColor = GetColorAt(TempLocation);
-            Color col = TempColor;
-            bool worked = true;
-
-            visualupdates = colorchangecount;
-            visualupdatestotal = count;
-            visualupdatesx = TempLocation.X;
-            visualupdatesy = TempLocation.Y;
-            runningupdatedetection = true;
-            UpdateTextDisplay();
-
-            TempColor = GetColorAt(TempLocation);
-
-            while (colorchangecount < count)
-            {
-                if (TempColor != col)
-                {
-                    //get average so that steady shifts dont count.
-                    double avg = (TempColor.R + TempColor.G + TempColor.B) / 3;
-                    double oldavg = (col.R + col.G + col.B) / 3;
-                    if (Math.Abs(oldavg - avg) > 9)
-                    {
-                        col = TempColor;
-                        colorchangecount++;
-                        starttime = DateTime.Now.AddSeconds(60).Ticks;
-                        System.Windows.Media.Color col2 = Colors.White;
-                        col2.R = TempColor.R;
-                        col2.G = TempColor.G;
-                        col2.B = TempColor.B;
-
-                        visualupdates = colorchangecount;
-                        visualupdatestotal = count;
-                        visualupdatesx = TempLocation.X;
-                        visualupdatesy = TempLocation.Y;
-                        UpdateTextDisplay();
-                    }
-                    else
-                    {
-                        if (DateTime.Now.Ticks > starttime)
-                        {
-                            worked = false;
-                            break;
-                        }
-                    }
-                }
-                TempColor = GetColorAt(TempLocation);
-                Task.Delay(33, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) break;
-            }
-
-            runningupdatedetection = false;
-            UpdateTextDisplay();
-
-            if (OrbitToken.IsCancellationRequested) return;
-            if (!worked)
-            {
-                ReturnToCharSelect();
-            }
-        }
-
-        public static async void SendClick(Point point)
-        {
-            uint gox = (uint)point.X;
-            uint goy = (uint)point.Y;
-            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
-            Task.Delay(101).Wait();
-            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
-        }
-
         public static async void PrepCharMenu()
         {
             IntroSection = false;
@@ -857,7 +785,7 @@ namespace TnTCheckpoint
             {
                 _connected = false;
                 statusheader = "Cannot find ViGEmBus:";
-                statussubtext = "Restarting in 10 seconds... If ViGEmBus isn't installed this will just loop forever."; 
+                statussubtext = "Restarting in 10 seconds... If ViGEmBus isn't installed this will just loop forever.";
                 UpdateTextDisplay();
 
                 Task.Delay(10000);
@@ -874,6 +802,611 @@ namespace TnTCheckpoint
                 return false;
             }
         }
+
+        private static async void GetActivityText()
+        {
+            bool good = true;
+            //convert to 16x9 for u.i. with a border for all math.
+            int width = d2window.Right - d2window.Left;
+            int height = d2window.Bottom - d2window.Top;
+            double ratio = width / height;
+            double desiredratio = 16 / 9;
+            int leftbuffer = 0;
+            int topbuffer = 0;
+
+            double iconpercentageX = 19.68;
+            double iconpercentageY = 6;
+
+            double firstemblemX = 12.14;
+            double firstemblemY = 31.94;
+
+            double horgap = 6.69;
+            double vertgap = 21.365;
+
+            if (ratio != desiredratio)
+            {
+                if (ratio > desiredratio)
+                {
+                    //width is too big
+                    int temp = (int)(height / 9 * 16);
+                    leftbuffer = (width - temp) / 2;
+                    width = temp;
+                }
+                else
+                {
+                    //height is too big
+                    int temp = (int)(width / 16 * 9);
+                    leftbuffer = (height - temp) / 2;
+                    height = temp;
+                }
+            }
+
+            //find the start location of the first activity icon regardless of aspect ratio
+            int starticonx = (int)Math.Round(width * (firstemblemX / 100)) + leftbuffer;
+            int starticony = (int)Math.Round(height * (firstemblemY / 100)) + topbuffer;
+
+            //get size of the icons for a given screen size
+            int iconwidth = (int)Math.Round(width * (iconpercentageX / 100));
+            int iconheight = (int)Math.Round(height * (iconpercentageY / 100));
+
+            //get gap between icons regardless of aspect ratio and screen size
+            int iconXgap = (int)Math.Round(width * (horgap / 100));
+            int iconYgap = (int)Math.Round(height * (vertgap / 100));
+
+            int ypos = starticony;
+            int xpos = starticonx;
+
+            List<Bitmap> raidimagelist = new List<Bitmap>();
+            List<Bitmap> dungeonimagelist = new List<Bitmap>();
+            List<Bitmap> pantheonimagelist = new List<Bitmap>();
+
+            DungeonActivityOrder.Clear();
+            RaidActivityOrder.Clear();
+            PantheonActivityOrder.Clear();
+
+            //change to controller input
+            _controller.SetButtonState(Xbox360Button.A, true);
+            Task.Delay(101).Wait();
+            _controller.SetButtonState(Xbox360Button.A, false);
+
+            Task.Delay(2000).Wait();
+
+            //raids
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Grabbing bitmaps of raids.";
+            UpdateTextDisplay();
+
+            for (int i = 0; i < 2; i++)
+            {
+                xpos = starticonx;
+                for (int j = 0; j < 3; j++)
+                {
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    raidimagelist.Add(bmpScreenshot);
+                    xpos = xpos + iconwidth + iconXgap;
+                    Task.Delay(100).Wait();
+                }
+                ypos = ypos + iconheight + iconYgap;
+            }
+
+            Task.Delay(100).Wait();
+
+            _controller.SetButtonState(Xbox360Button.Down, true);
+            Task.Delay(101).Wait();
+            _controller.SetButtonState(Xbox360Button.Down, false);
+            ypos = starticony;
+
+            AwaitColorChange(50, 50, 1);
+            Task.Delay(2000).Wait();
+
+            for (int i = 0; i < 2; i++)
+            {
+                xpos = starticonx;
+                for (int j = 0; j < 3; j++)
+                {
+                    if (raidimagelist.Count == 11) break;
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    raidimagelist.Add(bmpScreenshot);
+                    xpos = xpos + iconwidth + iconXgap;
+                    Task.Delay(100).Wait();
+                }
+                if (raidimagelist.Count == 11) break;
+                ypos = ypos + iconheight + iconYgap;
+            }
+
+            //dungeons
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Grabbing bitmaps of dungeons.";
+            UpdateTextDisplay();
+
+            _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+            Task.Delay(101).Wait();
+            _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+            ypos = starticony;
+
+            AwaitColorChange(50, 50, 1);
+            Task.Delay(2000).Wait();
+
+            for (int i = 0; i < 2; i++)
+            {
+                xpos = starticonx;
+                for (int j = 0; j < 3; j++)
+                {
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    dungeonimagelist.Add(bmpScreenshot);
+                    xpos = xpos + iconwidth + iconXgap;
+                    Task.Delay(100).Wait();
+                }
+                ypos = ypos + iconheight + iconYgap;
+            }
+            _controller.SetButtonState(Xbox360Button.Down, true);
+            Task.Delay(101).Wait();
+            _controller.SetButtonState(Xbox360Button.Down, false);
+
+            AwaitColorChange(50, 50, 1);
+            Task.Delay(2000).Wait();
+
+            ypos = starticony;
+
+            for (int i = 0; i < 2; i++)
+            {
+                xpos = starticonx;
+                for (int j = 0; j < 3; j++)
+                {
+                    if (dungeonimagelist.Count == 11) break;
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    dungeonimagelist.Add(bmpScreenshot);
+                    xpos = xpos + iconwidth + iconXgap;
+                    Task.Delay(100).Wait();
+                }
+                if (dungeonimagelist.Count == 11) break;
+                ypos = ypos + iconheight + iconYgap;
+            }
+
+            //pantheons
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Grabbing bitmaps of pantheon activites.";
+            UpdateTextDisplay();
+
+            _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+            Task.Delay(101).Wait();
+            _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+
+            AwaitColorChange(50, 50, 1);
+            Task.Delay(2000).Wait();
+
+            ypos = starticony + iconheight + iconYgap;
+            xpos = starticonx;
+            for (int j = 0; j < 3; j++)
+            {
+                //i = x, j = y
+                Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Graphics g = Graphics.FromImage(bmpScreenshot);
+                g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                pantheonimagelist.Add(bmpScreenshot);
+                xpos = xpos + iconwidth + iconXgap;
+                Task.Delay(100).Wait();
+            }
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Reading text of raids.";
+            UpdateTextDisplay();
+
+            int count = 0;
+            foreach (Bitmap map in raidimagelist)
+            {
+                if (!good) break;
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                string output = ConvertOCRtoAbbreviation(ocrstring);
+                if (output == "fail")
+                {
+                    good = false;
+                    break;
+                }
+                RaidActivityOrder.Add(output);
+                Task.Delay(100).Wait();
+                count++;
+            }
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Reading text of dungeons.";
+            UpdateTextDisplay();
+
+            count = 0;
+            foreach (Bitmap map in dungeonimagelist)
+            {
+                if (!good) break;
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                string output = ConvertOCRtoAbbreviation(ocrstring);
+                if (output == "fail")
+                {
+                    good = false;
+                    break;
+                }
+                DungeonActivityOrder.Add(output);
+                Task.Delay(100).Wait();
+                count++;
+            }
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Reading text of pantheon activites.";
+            UpdateTextDisplay();
+
+            count = 0;
+            foreach (Bitmap map in pantheonimagelist)
+            {
+                if (!good) break;
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                string output = ConvertOCRtoAbbreviation(ocrstring);
+                if (output == "fail")
+                {
+                    good = false;
+                    break;
+                }
+                PantheonActivityOrder.Add(output);
+                Task.Delay(100).Wait();
+                count++;
+            }
+
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, true);
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, false);
+
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, true);
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, false);
+
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, true);
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, false);
+
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, true);
+            Thread.Sleep(101);
+            _controller.SetButtonState(Xbox360Button.B, false);
+
+            ReturnToCharSelect();
+
+            if (good == false)
+            {
+                GetToDirectorForActivityCoords();
+                return;
+            }
+
+            statusheader = "Activity OCR:";
+            statussubtext = "Succeeded. Saving data to storage for next reset.";
+            UpdateTextDisplay();
+
+            //save the order of activities for the next reset
+            string fileoutput = RaidActivityOrder.First(); //add the first one to make separators easier to deal with
+            for (int i = 1; i < RaidActivityOrder.Count; i++) //start with the second one to make separators cleaner
+            {
+                fileoutput = fileoutput + "~" + RaidActivityOrder[i];
+            }
+            fileoutput = fileoutput + "_" + DungeonActivityOrder.First(); //add the activity split, and then same as before
+            for (int i = 1; i < DungeonActivityOrder.Count; i++) //start with the second one to make separators cleaner
+            {
+                fileoutput = fileoutput + "~" + DungeonActivityOrder[i];
+            }
+            fileoutput = fileoutput + "_" + PantheonActivityOrder.First(); //add the activity split, and then same as before
+            for (int i = 1; i < PantheonActivityOrder.Count; i++) //start with the second one to make separators cleaner
+            {
+                fileoutput = fileoutput + "~" + PantheonActivityOrder[i];
+            }
+
+            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
+
+            File.WriteAllText(path + "\\activities.ini", fileoutput);
+        }
+
+        public static string ConvertOCRtoAbbreviation(string input)
+        {
+            switch (input)
+            {
+                case "crotasend":
+                    return "CE";
+                case "deepstonecrypt":
+                    return "DSC";
+                case "thedesertperpetualepic":
+                    return "DPE";
+                case "thedesertperpetual":
+                    return "DP";
+                case "salvationsedge":
+                    return "SE";
+                case "rootofnightmares":
+                    return "RON";
+                case "kingsfall":
+                    return "KF";
+                case "vowofthedisciple":
+                    return "VOW";
+                case "vaultofglass":
+                    return "VOG";
+                case "gardenofsalvation":
+                    return "GOS";
+                case "lastwish":
+                    return "LW";
+                case "warlordsruin":
+                    return "WR";
+                case "pitofheresy":
+                    return "PIT";
+                case "equilibrium":
+                    return "EQ";
+                case "sundereddoctrine":
+                    return "SD";
+                case "vespershost":
+                    return "VH";
+                case "ghostsofthedeep":
+                    return "GOTD";
+                case "spireofthewatcher":
+                    return "SOTW";
+                case "duality":
+                    return "D";
+                case "graspofavarice":
+                    return "GOA";
+                case "prophecy":
+                    return "PR";
+                case "theshatteredthrone":
+                    return "ST";
+                case "pantheoncalusresplenden":
+                    return "CR";
+                case "pantheonmorgethsurpassir":
+                    return "MS";
+                case "pantheoninsurrectionprimerevolutionary":
+                    return "GAUNTLET";
+            }
+            return "fail";
+        }
+
+        #endregion
+
+        #region screenspace interaction and reading
+
+        private static async void AwaitColorChange(double percentageposx, double percentageposy, int count)
+        {
+            long starttime = DateTime.Now.AddSeconds(60).Ticks;
+            int colorchangecount = 0;
+            Point TempLocation = ConvertAspectRatioCoords(percentageposx, percentageposy);
+            Color TempColor = GetColorAt(TempLocation);
+            Color col = TempColor;
+            bool worked = true;
+
+            visualupdates = colorchangecount;
+            visualupdatestotal = count;
+            visualupdatesx = TempLocation.X;
+            visualupdatesy = TempLocation.Y;
+            runningupdatedetection = true;
+            UpdateTextDisplay();
+
+            TempColor = GetColorAt(TempLocation);
+
+            while (colorchangecount < count)
+            {
+                if (TempColor != col)
+                {
+                    //get average so that steady shifts dont count.
+                    double avg = (TempColor.R + TempColor.G + TempColor.B) / 3;
+                    double oldavg = (col.R + col.G + col.B) / 3;
+                    if (Math.Abs(oldavg - avg) > 9)
+                    {
+                        col = TempColor;
+                        colorchangecount++;
+                        starttime = DateTime.Now.AddSeconds(60).Ticks;
+                        System.Windows.Media.Color col2 = Colors.White;
+                        col2.R = TempColor.R;
+                        col2.G = TempColor.G;
+                        col2.B = TempColor.B;
+
+                        visualupdates = colorchangecount;
+                        visualupdatestotal = count;
+                        visualupdatesx = TempLocation.X;
+                        visualupdatesy = TempLocation.Y;
+                        UpdateTextDisplay();
+                    }
+                    else
+                    {
+                        if (DateTime.Now.Ticks > starttime)
+                        {
+                            worked = false;
+                            break;
+                        }
+                    }
+                }
+                TempColor = GetColorAt(TempLocation);
+                Task.Delay(33, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) break;
+            }
+
+            runningupdatedetection = false;
+            UpdateTextDisplay();
+
+            if (OrbitToken.IsCancellationRequested) return;
+            if (!worked)
+            {
+                ReturnToCharSelect();
+            }
+        }
+
+        public static async void SendClick(Point point)
+        {
+            uint gox = (uint)point.X;
+            uint goy = (uint)point.Y;
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
+            Task.Delay(101).Wait();
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
+        }
+
+        private static Color GetColorAt(Point coordinates)
+        {
+            Bitmap ColorCheckBitmap = new Bitmap(1, 1);
+
+            ColorCheckBitmap = new Bitmap(1, 1);
+            Rectangle bounds = new Rectangle(coordinates.X, coordinates.Y, 1, 1);
+            Graphics g = Graphics.FromImage(ColorCheckBitmap);
+            Size s = bounds.Size;
+            g.CopyFromScreen(bounds.Location, Point.Empty, s);
+
+            Color col = ColorCheckBitmap.GetPixel(0, 0);
+
+            ColorCheckBitmap.Dispose();
+            g.Dispose();
+
+            return col;
+        }
+
+        private static Point ConvertAspectRatioCoords(double xper, double yper)
+        {
+            //convert to 16x9 for u.i. with a border for all math.
+            int width = d2window.Right - d2window.Left;
+            int height = d2window.Bottom - d2window.Top;
+            double ratio = width * 1.0 / height;
+            double desiredratio = 16.0 / 9.0;
+            int leftbuffer = 0;
+            int topbuffer = 0;
+
+            if (ratio != desiredratio)
+            {
+                if (ratio > desiredratio)
+                {
+                    //width is too big
+                    int temp = (int)(height / 9 * 16);
+                    leftbuffer = (width - temp) / 2;
+                    width = temp;
+                }
+                else
+                {
+                    //height is too big
+                    int temp = (int)(width / 16 * 9);
+                    leftbuffer = (height - temp) / 2;
+                    height = temp;
+                }
+            }
+
+            int pointx = (int)Math.Round(leftbuffer + (width * (xper / 100)));
+            int pointy = (int)Math.Round(topbuffer + (height * (yper / 100)));
+
+            return new Point(pointx, pointy);
+        }
+
+        public static string GetText(Bitmap imgsource)
+        {
+            var ocrtext = string.Empty;
+            using (var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default))
+            {
+                engine.SetVariable("tessedit_char_whitelist", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':()");
+                using (var img = PixConverter.ToPix(imgsource))
+                {
+                    using (var page = engine.Process(img))
+                    {
+                        ocrtext = page.GetText();
+                    }
+                }
+            }
+
+            return ocrtext;
+        }
+
+        public static void awaittext(string inputtext, Point coordinatepointstart, Point coordinatepointend)
+        {
+            string currenttext = "";
+            bool match = false;
+            while (StringDifference(inputtext, currenttext) < .9)
+            {
+                if (OrbitToken.IsCancellationRequested) return;
+                int width = d2window.Right - d2window.Left;
+                int height = d2window.Bottom - d2window.Top;
+                int iconwidth = coordinatepointend.X - coordinatepointstart.X;
+                int iconheight = coordinatepointend.Y - coordinatepointstart.Y;
+                int xpos = coordinatepointstart.X;
+                int ypos = coordinatepointstart.Y;
+
+                Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                Graphics g = Graphics.FromImage(bmpScreenshot);
+                Task.Delay(500, OrbitToken).Wait();
+
+                g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                Task.Delay(500, OrbitToken).Wait();
+
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                Task.Delay(500, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return;
+
+                string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                bmpScreenshot.Dispose();
+
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return;
+                currenttext = ocrstring;
+            }
+        }
+
+        public static double StringDifference(string s1, string s2)
+        {
+            char[] c1 = s1.ToLower().ToArray();
+            char[] c2 = s2.ToLower().ToArray();
+
+            int length = c1.Count();
+            if (c2.Count() < length) length = c2.Count();
+
+            if (length == 0) return 0;
+
+            double same = 0;
+            for (int i = 0; i < length; i++)
+            {
+                if (c1[i] == c2[i]) same++;
+            }
+
+            double match = same / length;
+
+            return match;
+        }
+
+        public static bool CheckBlackScreen()
+        {
+            //3 point check for clarity sake
+            if (GetColorAt(ConvertAspectRatioCoords(25, 75)) == black &
+                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black &
+                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black) return true;
+            return false;
+        }
+
+        #endregion
+
+        #region commands and messaging
 
         private static async ValueTask HandleMessages(Message message)
         {
@@ -3401,459 +3934,16 @@ namespace TnTCheckpoint
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
 
-        private static Color GetColorAt(Point coordinates)
+        public static void CommandGerbCheckpoint(Message message)
         {
-            Bitmap ColorCheckBitmap = new Bitmap(1, 1);
-
-            ColorCheckBitmap = new Bitmap(1, 1);
-            Rectangle bounds = new Rectangle(coordinates.X, coordinates.Y, 1, 1);
-            Graphics g = Graphics.FromImage(ColorCheckBitmap);
-            Size s = bounds.Size;
-            g.CopyFromScreen(bounds.Location, Point.Empty, s);
-
-            Color col = ColorCheckBitmap.GetPixel(0, 0);
-
-            ColorCheckBitmap.Dispose();
-            g.Dispose();
-            
-            return col;
+            client.Rest.SendMessageAsync(message.ChannelId, "gerbulating...");
+            Thread.Sleep(3000);
+            client.Rest.SendMessageAsync(message.ChannelId, "gerbulation failed :(");
         }
 
-        private static async void GetActivityText()
-        {
-            bool good = true;
-            //convert to 16x9 for u.i. with a border for all math.
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-            double ratio = width / height;
-            double desiredratio = 16 / 9;
-            int leftbuffer = 0;
-            int topbuffer = 0;
+        #endregion
 
-            double iconpercentageX = 19.68;
-            double iconpercentageY = 6;
-
-            double firstemblemX = 12.14;
-            double firstemblemY = 31.94;
-
-            double horgap = 6.69;
-            double vertgap = 21.365;
-
-            if (ratio != desiredratio)
-            {
-                if (ratio > desiredratio)
-                {
-                    //width is too big
-                    int temp = (int)(height / 9 * 16);
-                    leftbuffer = (width - temp) / 2;
-                    width = temp;
-                }
-                else
-                {
-                    //height is too big
-                    int temp = (int)(width / 16 * 9);
-                    leftbuffer = (height - temp) / 2;
-                    height = temp;
-                }
-            }
-
-            //find the start location of the first activity icon regardless of aspect ratio
-            int starticonx = (int)Math.Round(width * (firstemblemX / 100)) + leftbuffer;
-            int starticony = (int)Math.Round(height * (firstemblemY / 100)) + topbuffer;
-
-            //get size of the icons for a given screen size
-            int iconwidth = (int)Math.Round(width * (iconpercentageX / 100));
-            int iconheight = (int)Math.Round(height * (iconpercentageY / 100));
-
-            //get gap between icons regardless of aspect ratio and screen size
-            int iconXgap = (int)Math.Round(width * (horgap / 100));
-            int iconYgap = (int)Math.Round(height * (vertgap / 100));
-
-            int ypos = starticony;
-            int xpos = starticonx;
-
-            List<Bitmap> raidimagelist = new List<Bitmap>();
-            List<Bitmap> dungeonimagelist = new List<Bitmap>();
-            List<Bitmap> pantheonimagelist = new List<Bitmap>();
-
-            DungeonActivityOrder.Clear();
-            RaidActivityOrder.Clear();
-            PantheonActivityOrder.Clear();
-
-            //change to controller input
-            _controller.SetButtonState(Xbox360Button.A, true);
-            Task.Delay(101).Wait();
-            _controller.SetButtonState(Xbox360Button.A, false);
-
-            Task.Delay(2000).Wait();
-
-            //raids
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Grabbing bitmaps of raids.";
-            UpdateTextDisplay();
-
-            for (int i = 0; i < 2; i++)
-            {
-                xpos = starticonx;
-                for (int j = 0; j < 3; j++)
-                {
-                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Graphics g = Graphics.FromImage(bmpScreenshot);
-                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                    raidimagelist.Add(bmpScreenshot);
-                    xpos = xpos + iconwidth + iconXgap;
-                    Task.Delay(100).Wait();
-                }
-                ypos = ypos + iconheight + iconYgap;
-            }
-
-            Task.Delay(100).Wait();
-
-            _controller.SetButtonState(Xbox360Button.Down, true);
-            Task.Delay(101).Wait();
-            _controller.SetButtonState(Xbox360Button.Down, false);
-            ypos = starticony;
-
-            AwaitColorChange(50, 50, 1);
-            Task.Delay(2000).Wait();
-
-            for (int i = 0; i < 2; i++)
-            {
-                xpos = starticonx;
-                for (int j = 0; j < 3; j++)
-                {
-                    if (raidimagelist.Count == 11) break;
-                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Graphics g = Graphics.FromImage(bmpScreenshot);
-                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                    raidimagelist.Add(bmpScreenshot);
-                    xpos = xpos + iconwidth + iconXgap;
-                    Task.Delay(100).Wait();
-                }
-                if (raidimagelist.Count == 11) break;
-                ypos = ypos + iconheight + iconYgap;
-            }
-
-            //dungeons
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Grabbing bitmaps of dungeons.";
-            UpdateTextDisplay();
-
-            _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-            Task.Delay(101).Wait();
-            _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-            ypos = starticony;
-
-            AwaitColorChange(50, 50, 1);
-            Task.Delay(2000).Wait();
-
-            for (int i = 0; i < 2; i++)
-            {
-                xpos = starticonx;
-                for (int j = 0; j < 3; j++)
-                {
-                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Graphics g = Graphics.FromImage(bmpScreenshot);
-                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                    dungeonimagelist.Add(bmpScreenshot);
-                    xpos = xpos + iconwidth + iconXgap;
-                    Task.Delay(100).Wait();
-                }
-                ypos = ypos + iconheight + iconYgap;
-            }
-            _controller.SetButtonState(Xbox360Button.Down, true);
-            Task.Delay(101).Wait();
-            _controller.SetButtonState(Xbox360Button.Down, false);
-
-            AwaitColorChange(50, 50, 1);
-            Task.Delay(2000).Wait();
-
-            ypos = starticony;
-
-            for (int i = 0; i < 2; i++)
-            {
-                xpos = starticonx;
-                for (int j = 0; j < 3; j++)
-                {
-                    if (dungeonimagelist.Count == 11) break;
-                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Graphics g = Graphics.FromImage(bmpScreenshot);
-                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                    dungeonimagelist.Add(bmpScreenshot);
-                    xpos = xpos + iconwidth + iconXgap;
-                    Task.Delay(100).Wait();
-                }
-                if (dungeonimagelist.Count == 11) break;
-                ypos = ypos + iconheight + iconYgap;
-            }
-
-            //pantheons
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Grabbing bitmaps of pantheon activites.";
-            UpdateTextDisplay();
-
-            _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-            Task.Delay(101).Wait();
-            _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-
-            AwaitColorChange(50, 50, 1);
-            Task.Delay(2000).Wait();
-
-            ypos = starticony + iconheight + iconYgap;
-            xpos = starticonx;
-            for (int j = 0; j < 3; j++)
-            {
-                //i = x, j = y
-                Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Graphics g = Graphics.FromImage(bmpScreenshot);
-                g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                pantheonimagelist.Add(bmpScreenshot);
-                xpos = xpos + iconwidth + iconXgap;
-                Task.Delay(100).Wait();
-            }
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Reading text of raids.";
-            UpdateTextDisplay();
-
-            int count = 0;
-            foreach (Bitmap map in raidimagelist)
-            {
-                if (!good) break;
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                string output = ConvertOCRtoAbbreviation(ocrstring);
-                if (output == "fail")
-                {
-                    good = false;
-                    break;
-                }
-                RaidActivityOrder.Add(output);
-                Task.Delay(100).Wait();
-                count++;
-            }
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Reading text of dungeons.";
-            UpdateTextDisplay();
-
-            count = 0;
-            foreach (Bitmap map in dungeonimagelist)
-            {
-                if (!good) break;
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                string output = ConvertOCRtoAbbreviation(ocrstring);
-                if (output == "fail")
-                {
-                    good = false;
-                    break;
-                }
-                DungeonActivityOrder.Add(output);
-                Task.Delay(100).Wait();
-                count++;
-            }
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Reading text of pantheon activites.";
-            UpdateTextDisplay();
-
-            count = 0;
-            foreach (Bitmap map in pantheonimagelist)
-            {
-                if (!good) break;
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-                string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                string output = ConvertOCRtoAbbreviation(ocrstring);
-                if (output == "fail")
-                {
-                    good = false;
-                    break;
-                }
-                PantheonActivityOrder.Add(output);
-                Task.Delay(100).Wait();
-                count++;
-            }
-
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            ReturnToCharSelect();
-
-            if(good == false)
-            {
-                GetToDirectorForActivityCoords();
-                return;
-            }
-
-            statusheader = "Activity OCR:";
-            statussubtext = "Succeeded. Saving data to storage for next reset.";
-            UpdateTextDisplay();
-
-            //save the order of activities for the next reset
-            string fileoutput = RaidActivityOrder.First(); //add the first one to make separators easier to deal with
-            for (int i = 1; i < RaidActivityOrder.Count; i++) //start with the second one to make separators cleaner
-            {
-                fileoutput = fileoutput + "~" + RaidActivityOrder[i];
-            }
-            fileoutput = fileoutput + "_" + DungeonActivityOrder.First(); //add the activity split, and then same as before
-            for (int i = 1; i < DungeonActivityOrder.Count; i++) //start with the second one to make separators cleaner
-            {
-                fileoutput = fileoutput + "~" + DungeonActivityOrder[i];
-            }
-            fileoutput = fileoutput + "_" + PantheonActivityOrder.First(); //add the activity split, and then same as before
-            for (int i = 1; i < PantheonActivityOrder.Count; i++) //start with the second one to make separators cleaner
-            {
-                fileoutput = fileoutput + "~" + PantheonActivityOrder[i];
-            }
-
-            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
-
-            File.WriteAllText(path + "\\activities.ini", fileoutput);
-        }
-
-        private static Point ConvertAspectRatioCoords(double xper, double yper)
-        {
-            //convert to 16x9 for u.i. with a border for all math.
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-            double ratio = width * 1.0 / height;
-            double desiredratio = 16.0 / 9.0;
-            int leftbuffer = 0;
-            int topbuffer = 0;
-
-            if (ratio != desiredratio)
-            {
-                if (ratio > desiredratio)
-                {
-                    //width is too big
-                    int temp = (int)(height / 9 * 16);
-                    leftbuffer = (width - temp) / 2;
-                    width = temp;
-                }
-                else
-                {
-                    //height is too big
-                    int temp = (int)(width / 16 * 9);
-                    leftbuffer = (height - temp) / 2;
-                    height = temp;
-                }
-            }
-
-            int pointx = (int)Math.Round(leftbuffer + (width * (xper / 100)));
-            int pointy = (int)Math.Round(topbuffer + (height * (yper / 100)));
-
-            return new Point(pointx, pointy);
-        }
-
-        public static string GetText(Bitmap imgsource)
-        {
-            var ocrtext = string.Empty;
-            using (var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default))
-            {
-                engine.SetVariable("tessedit_char_whitelist", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':()");
-                using (var img = PixConverter.ToPix(imgsource))
-                {
-                    using (var page = engine.Process(img))
-                    {
-                        ocrtext = page.GetText();
-                    }
-                }
-            }
-
-            return ocrtext;
-        }
-
-        public static string ConvertOCRtoAbbreviation(string input)
-        {
-            switch (input)
-            {
-                case "crotasend":
-                    return "CE";
-                case "deepstonecrypt":
-                    return "DSC";
-                case "thedesertperpetualepic":
-                    return "DPE";
-                case "thedesertperpetual":
-                    return "DP";
-                case "salvationsedge":
-                    return "SE";
-                case "rootofnightmares":
-                    return "RON";
-                case "kingsfall":
-                    return "KF";
-                case "vowofthedisciple":
-                    return "VOW";
-                case "vaultofglass":
-                    return "VOG";
-                case "gardenofsalvation":
-                    return "GOS";
-                case "lastwish":
-                    return "LW";
-                case "warlordsruin":
-                    return "WR";
-                case "pitofheresy":
-                    return "PIT";
-                case "equilibrium":
-                    return "EQ";
-                case "sundereddoctrine":
-                    return "SD";
-                case "vespershost":
-                    return "VH";
-                case "ghostsofthedeep":
-                    return "GOTD";
-                case "spireofthewatcher":
-                    return "SOTW";
-                case "duality":
-                    return "D";
-                case "graspofavarice":
-                    return "GOA";
-                case "prophecy":
-                    return "PR";
-                case "theshatteredthrone":
-                    return "ST";
-                case "pantheoncalusresplenden":
-                    return "CR";
-                case "pantheonmorgethsurpassir":
-                    return "MS";
-                case "pantheoninsurrectionprimerevolutionary":
-                    return "GAUNTLET";
-            }
-            return "fail";
-        }
+        #region shorthand macros
 
         public static void ReturnToCharSelect()
         {
@@ -4859,44 +4949,9 @@ namespace TnTCheckpoint
             }
         }
 
-        public static void awaittext(string inputtext, Point coordinatepointstart, Point coordinatepointend)
-        {
-            string currenttext = "";
-            bool match = false;
-            while (StringDifference(inputtext, currenttext) < .9)
-            {
-                if (OrbitToken.IsCancellationRequested) return;
-                int width = d2window.Right - d2window.Left;
-                int height = d2window.Bottom - d2window.Top;
-                int iconwidth = coordinatepointend.X - coordinatepointstart.X;
-                int iconheight = coordinatepointend.Y - coordinatepointstart.Y;
-                int xpos = coordinatepointstart.X;
-                int ypos = coordinatepointstart.Y;
+        #endregion
 
-                Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Graphics g = Graphics.FromImage(bmpScreenshot);
-                Task.Delay(500, OrbitToken).Wait();
-
-                g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                Task.Delay(500, OrbitToken).Wait();
-
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-
-                Task.Delay(500, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-
-                string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                bmpScreenshot.Dispose();
-
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-                currenttext = ocrstring;
-            }
-        }
+        #region bookkeeping
 
         public static void savecheckpoints()
         {
@@ -4975,41 +5030,12 @@ namespace TnTCheckpoint
 
         }
 
-        public static double StringDifference(string s1, string s2)
+        public static void KillProcess()
         {
-            char[] c1 = s1.ToLower().ToArray();
-            char[] c2 = s2.ToLower().ToArray();
-
-            int length = c1.Count();
-            if (c2.Count() < length) length = c2.Count();
-
-            if (length == 0) return 0;
-
-            double same = 0;
-            for(int i = 0; i < length; i++)
-            {
-                if (c1[i] == c2[i]) same++;
-            }
-
-            double match = same / length;
-
-            return match;
+            D2Process.Kill();
+            Environment.Exit(0);
         }
 
-        public static void CommandGerbCheckpoint(Message message)
-        {
-            client.Rest.SendMessageAsync(message.ChannelId, "gerbulating...");
-            Thread.Sleep(3000);
-            client.Rest.SendMessageAsync(message.ChannelId, "gerbulation failed :(");
-        }
-
-        public static bool CheckBlackScreen()
-        {
-            //3 point check for clarity sake
-            if (GetColorAt(ConvertAspectRatioCoords(25, 75)) == black &
-                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black &
-                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black) return true;
-            return false;
-        }
+        #endregion
     }
 }
