@@ -107,33 +107,26 @@ namespace TnTCheckpoint
         public static RECT d2window = new RECT();
         private static Process D2Process;
         private static bool startup = true;
-        private static bool foundd2 = false;
-
         private static Color black = Color.Black;
-
         private delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
-
         private static ViGEmClient? _client;
         private static IXbox360Controller? _controller;
-
         private static readonly SemaphoreSlim _toggleLock = new(1, 1);
         private static bool _connected = false;
         private static GatewayClient client;
-
         public static bool holdingload = false;
         public static bool checkpointfarmmode = false;
         public static bool afkcycle = false;
         public static bool bootsonground = false;
         public static bool oncharselect = false;
         public static bool grabbingcheckpoint = false;
+        public static bool cleaningcheckpoints = false;
         public static int verifylevel = 0;
         public static bool verifying = false;
         public static bool transferingcheckpoint = false;
         public static bool deletingcheckpoint = false;
         public static DateTime ResetTime = DateTime.MaxValue;
-
         public static bool initializing = true;
-
         public static string statusheader = "";
         public static string statussubtext = "";
         public static int visualupdates = 0;
@@ -141,35 +134,28 @@ namespace TnTCheckpoint
         public static int visualupdatesx = 0;
         public static int visualupdatesy = 0;
         public static bool runningupdatedetection = false;
-
         public static CancellationToken OrbitToken = new CancellationToken();
         public static CancellationTokenSource OrbitTokenSource = new CancellationTokenSource();
-
         public static bool IntroSection = true;
         public static bool GottenActivityOrder = false;
-
         public static string workingusername = "";
         public static string workingdiscordname = "";
         public static int farmmode = 0;
         public static string activityname = "";
         public static string checkpointname = "";
-
         public static string DeveloperToken = ""; 
         public static double ChannelID = 0; 
-
         public static List<string> RaidActivityOrder = new List<string>();
         public static List<string> DungeonActivityOrder = new List<string>();
         public static List<string> PantheonActivityOrder = new List<string>();
-
         public static Dictionary<string, Dictionary<string, int>> checkpoints = new Dictionary<string, Dictionary<string, int>>();
-
         public static DateTime closetime = DateTime.MaxValue;
-
         public static bool closebuttonpressed = false;
-
         public const short FARMMODE_RAID = 0;
         public const short FARMMODE_DUNGEON = 1;
         public const int FARMMODE_PANTHEON = 2;
+
+        public static DateTime afktimer = DateTime.Now.AddMinutes(55);
 
         public const string emptybar = "                                                                                                                                          ";
 
@@ -381,7 +367,7 @@ namespace TnTCheckpoint
                                     if (!File.Exists(loc + "\\reset.ini")) File.Create(loc + "\\reset.ini");
 
                                     loc = loc + "\\" + appName + ".exe"; //if you dont do it this way it gives a .dll file instead.
-                                    System.Diagnostics.Process.Start(loc); 
+                                    System.Diagnostics.Process.Start(loc);
 
                                     // Closes the current process
                                     Environment.Exit(0);
@@ -440,6 +426,28 @@ namespace TnTCheckpoint
 
                                                         // Closes the current process
                                                         Environment.Exit(0);
+                                                    }
+
+                                                    //menu afk cycle
+                                                    if (oncharselect & !(checkpointfarmmode || holdingload || afkcycle || bootsonground || oncharselect || grabbingcheckpoint || cleaningcheckpoints))
+                                                    {
+                                                        //currently running afk timer
+                                                        if (DateTime.Now > afktimer)
+                                                        {
+                                                            UpdateStatusBar("AFK cycle", UserStatusType.DoNotDisturb);
+                                                            afkcycle = true;
+                                                            SelectChar(1);
+                                                            Task.Delay(5000).Wait();
+                                                            afktimer = DateTime.Now.AddMinutes(55);
+                                                            ReturnToCharSelect();
+                                                            afkcycle = false;
+                                                            UpdateStatusBar("Idle...", UserStatusType.Online);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        //push forward afk timer so once im done doing things it resumes with generous leeway.
+                                                        afktimer = DateTime.Now.AddMinutes(55);
                                                     }
                                                 }
                                             }
@@ -666,7 +674,7 @@ namespace TnTCheckpoint
                 if (File.Exists(path + "\\checkpoints.ini")) File.Delete(path + "\\checkpoints.ini");
                 if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
             }
-        }
+        } //TODO dont scrub checkpoints for activities that dont lose their checkpoints. 
 
         private static async void InitializeBot()
         {
@@ -1040,6 +1048,11 @@ namespace TnTCheckpoint
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                     return;
                 }
@@ -1065,8 +1078,11 @@ namespace TnTCheckpoint
                     }
                 }
                 verifying = false;
+                cleaningcheckpoints = true;
 
                 CleanCheckpoints();
+
+                cleaningcheckpoints = false;
 
             }).Start();
         }
@@ -1121,6 +1137,11 @@ namespace TnTCheckpoint
                     if (deletingcheckpoint)
                     {
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
@@ -1590,10 +1611,11 @@ namespace TnTCheckpoint
                 verifylevel = 0;
                 verifying = false;
                 transferingcheckpoint = false;
+                cleaningcheckpoints = false;
 
                 OrbitTokenSource.Cancel();
 
-                Task.Delay(1000).Wait();
+                Task.Delay(10000).Wait();
 
                 OrbitTokenSource.TryReset();
 
@@ -1654,6 +1676,11 @@ namespace TnTCheckpoint
                     if (deletingcheckpoint)
                     {
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
@@ -2029,6 +2056,11 @@ namespace TnTCheckpoint
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                     return;
                 }
@@ -2188,21 +2220,21 @@ namespace TnTCheckpoint
 
                 while (checkpointfarmmode)
                 {
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     SelectChar(charslot);
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     SelectDirector();
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     SelectPortal();
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     SelectActivity(activity);
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     if (master) SelectMaster();
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     if (activitykey == "DP" || activitykey == "EDP" || activitykey == "EQ") ClearFeats();
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
                     if (feats) SelectFeats(featlist);
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
 
                     InvitePlayer("/invite " + workingusername);
 
@@ -2217,13 +2249,13 @@ namespace TnTCheckpoint
                     SetCursorPos(pointclick.X, pointclick.Y);
 
                     Task.Delay(1000, OrbitToken).Wait();
-                    if (!checkpointfarmmode) break;
+                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
 
                     Color spotcolor = GetColorAt(pointcheck);
 
                     bool change = false;
 
-                    DateTime time = DateTime.Now.AddHours(1);
+                    DateTime time = DateTime.Now.AddMinutes(55);
                     statussubtext = "Comparing red values to see launch button go red.";
                     UpdateTextDisplay();
 
@@ -2529,6 +2561,11 @@ namespace TnTCheckpoint
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                     return;
                 }
@@ -2729,6 +2766,11 @@ namespace TnTCheckpoint
                     if (deletingcheckpoint)
                     {
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
@@ -2946,6 +2988,11 @@ namespace TnTCheckpoint
                     if (deletingcheckpoint)
                     {
                         client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
                         return;
                     }
                     client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
@@ -4032,9 +4079,11 @@ namespace TnTCheckpoint
             _controller.SetButtonState(Xbox360Button.RightThumb, true);
             Task.Delay(101, OrbitToken).Wait();
             _controller.SetButtonState(Xbox360Button.RightThumb, false);
+            if (OrbitToken.IsCancellationRequested) return;
             _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
             Task.Delay(1000, OrbitToken).Wait();
             _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
+            if (OrbitToken.IsCancellationRequested) return;
             Task.Delay(500, OrbitToken).Wait();
             if (OrbitToken.IsCancellationRequested) return;
 
@@ -4055,6 +4104,7 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.Down, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.Down, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     AwaitColorChange(50, 72, 1);
                     if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(1600, OrbitToken).Wait();
@@ -4067,6 +4117,7 @@ namespace TnTCheckpoint
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101, OrbitToken).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                if (OrbitToken.IsCancellationRequested) return;
                 AwaitColorChange(50, 72, 1);
                 if (OrbitToken.IsCancellationRequested) return;
                 Task.Delay(1500, OrbitToken).Wait();
@@ -4078,6 +4129,7 @@ namespace TnTCheckpoint
 
                     _controller.SetButtonState(Xbox360Button.Down, true);
                     Task.Delay(101, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return;
                     _controller.SetButtonState(Xbox360Button.Down, false);
                     AwaitColorChange(50, 72, 1);
                     if (OrbitToken.IsCancellationRequested) return;
@@ -4092,6 +4144,7 @@ namespace TnTCheckpoint
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101, OrbitToken).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                if (OrbitToken.IsCancellationRequested) return;
                 AwaitColorChange(50, 72, 1);
                 if (OrbitToken.IsCancellationRequested) return;
                 Task.Delay(300, OrbitToken).Wait();
@@ -4099,6 +4152,7 @@ namespace TnTCheckpoint
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101, OrbitToken).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                if (OrbitToken.IsCancellationRequested) return;
                 AwaitColorChange(50, 72, 1);
                 if (OrbitToken.IsCancellationRequested) return;
                 Task.Delay(1500, OrbitToken).Wait();
@@ -4371,7 +4425,7 @@ namespace TnTCheckpoint
             sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
         }
 
-        private static bool JoinFireteamFromOrbit(string chat, string activ) //add activity functionality for this. RON and Proph
+        private static bool JoinFireteamFromOrbit(string chat, string activ) 
         {
             statussubtext = "Typing in fireteam name...";
             UpdateTextDisplay();
@@ -4470,7 +4524,7 @@ namespace TnTCheckpoint
 
                 return true;
             }
-        }
+        } //TODO check if more activities skip second blackscreen on join
 
         private static bool JoinFireteamInOrbit(string chat)
         {
@@ -4596,8 +4650,11 @@ namespace TnTCheckpoint
             for (int i = 1; i <= 3; i++)
             {
                 SelectChar(i);
+                if (OrbitToken.IsCancellationRequested) return;
                 SelectDirector();
+                if (OrbitToken.IsCancellationRequested) return;
                 SelectPortal();
+                if (OrbitToken.IsCancellationRequested) return;
                 int indx = 0;
                 int page = 0;
 
@@ -4689,15 +4746,18 @@ namespace TnTCheckpoint
                     SelectActivity(tmp);
                     if (OrbitToken.IsCancellationRequested) return;
                     if(activity.Contains("master")) SelectMaster();
+                    if (OrbitToken.IsCancellationRequested) return;
                     SendClick(new Point(50, 50));
 
                     if (OrbitToken.IsCancellationRequested) return;
 
                     removecheckpoint();
                     Task.Delay(101, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return;
 
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return;
                     _controller.SetButtonState(Xbox360Button.B, false);
                     Task.Delay(101, OrbitToken).Wait();
                     if (OrbitToken.IsCancellationRequested) return;
@@ -4705,12 +4765,14 @@ namespace TnTCheckpoint
 
                 _controller.SetButtonState(Xbox360Button.B, true);
                 Task.Delay(101, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return;
                 _controller.SetButtonState(Xbox360Button.B, false);
                 Task.Delay(101, OrbitToken).Wait();
                 if (OrbitToken.IsCancellationRequested) return;
 
                 _controller.SetButtonState(Xbox360Button.B, true);
                 Task.Delay(101, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return;
                 _controller.SetButtonState(Xbox360Button.B, false);
                 if (OrbitToken.IsCancellationRequested) return;
 
