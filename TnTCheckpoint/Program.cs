@@ -3197,7 +3197,7 @@ namespace TnTCheckpoint
 
                     UpdateStatusBar("!GrabCheckpoint... Awaiting wipe :3", UserStatusType.Idle);
 
-                    awaittext("last", ConvertAspectRatioCoords(35.6770833333, 16.3888888), ConvertAspectRatioCoords(39.6484375, 19.236111111));
+                    awaittext("lightfadesaway", ConvertAspectRatioCoords(30.98958333333, 9.25925925925926), ConvertAspectRatioCoords(66.927083333, 15.55555555555));
 
                     statusheader = "!GrabCheckpoint command:";
                     statussubtext = "Wipe screen found. Waiting for wipe screen to clear.";
@@ -4037,7 +4037,7 @@ namespace TnTCheckpoint
             SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
             Task.Delay(101, OrbitToken).Wait();
             SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
-            Task.Delay(800, OrbitToken).Wait();
+            Task.Delay(500, OrbitToken).Wait();
             black = GetColorAt(new Point(50, 50));
             AwaitColorChange(50, 50, 2);
             Task.Delay(3000, OrbitToken).Wait();
