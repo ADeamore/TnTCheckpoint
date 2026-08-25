@@ -2726,6 +2726,7 @@ namespace TnTCheckpoint
                         UpdateTextDisplay();
                     }
                 }
+                verifying = false;
                 holdingload = false;
             }).Start();
         }
