@@ -813,13 +813,13 @@ namespace TnTCheckpoint
             int leftbuffer = 0;
             int topbuffer = 0;
 
-            double iconpercentageX = 19.68;
+            double iconpercentageX = 21.68;
             double iconpercentageY = 6;
 
             double firstemblemX = 12.14;
             double firstemblemY = 31.94;
 
-            double horgap = 6.69;
+            double horgap = 4.69;
             double vertgap = 21.365;
 
             if (ratio != desiredratio)
@@ -1176,9 +1176,9 @@ namespace TnTCheckpoint
                     return "PR";
                 case "theshatteredthrone":
                     return "ST";
-                case "pantheoncalusresplenden":
+                case "pantheoncalusresplendent":
                     return "CR";
-                case "pantheonmorgethsurpassir":
+                case "pantheonmorgethsurpassing":
                     return "MS";
                 case "pantheoninsurrectionprimerevolutionary":
                     return "GAUNTLET";
@@ -4056,7 +4056,7 @@ namespace TnTCheckpoint
 
         #endregion 
 
-        #region shorthand macros
+        #region macros
         public static void ReturnToCharSelectForceful()
         {
             statussubtext = "Return to orbit: Making sure I'm taking controller input.";
@@ -4286,12 +4286,29 @@ namespace TnTCheckpoint
             statussubtext = "Getting to director...";
             UpdateTextDisplay();
 
+            //clear notification for iron banner
+            _controller.SetButtonState(Xbox360Button.RightThumb, true); //this is to make sure im in controller mode
+            Task.Delay(101, OrbitToken).Wait();
+            _controller.SetButtonState(Xbox360Button.RightThumb, false);
+            Task.Delay(101, OrbitToken).Wait();
+            _controller.SetButtonState(Xbox360Button.A, true);
+            Task.Delay(101, OrbitToken).Wait();
+            _controller.SetButtonState(Xbox360Button.A, false);
+            Task.Delay(101, OrbitToken).Wait();
+
+            //get to director
             _controller.SetButtonState(Xbox360Button.Back, true);
             Task.Delay(101, OrbitToken).Wait();
             _controller.SetButtonState(Xbox360Button.Back, false);
             Task.Delay(101, OrbitToken).Wait();
             AwaitColorChange(56.52, 87.08, 2);
             Task.Delay(2500, OrbitToken).Wait();
+
+            //double down on clearing notification for iron banner
+            _controller.SetButtonState(Xbox360Button.A, true);
+            Task.Delay(101, OrbitToken).Wait();
+            _controller.SetButtonState(Xbox360Button.A, false);
+            Task.Delay(101, OrbitToken).Wait();
 
             //now on director
         }
