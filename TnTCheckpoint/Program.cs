@@ -4308,7 +4308,7 @@ namespace TnTCheckpoint
             Task.Delay(101, OrbitToken).Wait();
             SendClick(ConvertAspectRatioCoords(50, 50));
             Task.Delay(101, OrbitToken).Wait();
-            SetCursorPos(ConvertAspectRatioCoords(56.52, 87.08).X, ConvertAspectRatioCoords(56.52, 87.08).Y);
+            SetCursorPos(ConvertAspectRatioCoords(58, 87.08).X, ConvertAspectRatioCoords(58, 87.08).Y);
             Task.Delay(101, OrbitToken).Wait();
             SendClick(ConvertAspectRatioCoords(56.52, 87.08));
             AwaitColorChange(50, 85, 2);
