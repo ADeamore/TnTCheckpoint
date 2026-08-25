@@ -2852,12 +2852,12 @@ namespace TnTCheckpoint
                 else
                 {
 
-                    UpdateStatusBar("!HoldLoad... Currently holding load for " + workingdiscordname + ". Run !stopholding to stop.", UserStatusType.Idle);
+                    UpdateStatusBar("!HoldLoad... Currently holding load for " + workingdiscordname + ". Run !endhold to stop.", UserStatusType.Idle);
                     statusheader = "!HoldLoad command:";
                     statussubtext = "Boots on ground. Going to AFK macro.";
                     UpdateTextDisplay();
 
-                    client.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!stopholding\" when you want me to stop.");
+                    client.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!endhold\" when you want me to stop.");
 
                     Task.Delay(10000, OrbitToken).Wait();
                     if (OrbitToken.IsCancellationRequested) return;
