@@ -37,17 +37,9 @@ namespace TnTCheckpoint
         #region dll imports
 
         [DllImport("user32.dll")]
-        private static extern short GetAsyncKeyState(int vKey);
-
-        [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
-        [DllImport("gdi32.dll", CharSet = CharSet.Auto, SetLastError = true, ExactSpelling = true)]
-        public static extern int BitBlt(IntPtr hDC, int x, int y, int nWidth, int nHeight, IntPtr hSrcDC, int xSrc, int ySrc, int dwRop);
-
-        [DllImport("user32.dll")]
-        static extern bool SetForegroundWindow(IntPtr hWnd);
         [DllImport("User32.Dll")]
         public static extern long SetCursorPos(int x, int y);
 
@@ -92,7 +84,6 @@ namespace TnTCheckpoint
         #endregion
 
         #region controllerconstants
-        private const int VK_OEM_3 = 0xC0;
 
         private const short STICK_CENTER = 0;
         private const short STICK_BACK = short.MinValue;
@@ -111,7 +102,6 @@ namespace TnTCheckpoint
         private delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
         private static ViGEmClient? _client;
         private static IXbox360Controller? _controller;
-        private static readonly SemaphoreSlim _toggleLock = new(1, 1);
         private static bool _connected = false;
         private static GatewayClient client;
         public static bool holdingload = false;
@@ -151,9 +141,6 @@ namespace TnTCheckpoint
         public static Dictionary<string, Dictionary<string, int>> checkpoints = new Dictionary<string, Dictionary<string, int>>();
         public static DateTime closetime = DateTime.MaxValue;
         public static bool closebuttonpressed = false;
-        public const short FARMMODE_RAID = 0;
-        public const short FARMMODE_DUNGEON = 1;
-        public const int FARMMODE_PANTHEON = 2;
 
         public static DateTime afktimer = DateTime.Now.AddMinutes(55);
 
@@ -4086,23 +4073,6 @@ namespace TnTCheckpoint
             statusheader = "Idle...";
             statussubtext = "";
             UpdateTextDisplay();
-        }
-
-        public static BitmapSource ConvertBitmapToBitmapSource(System.Drawing.Bitmap bitmap)
-        {
-            var bitmapData = bitmap.LockBits(
-                new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height),
-                System.Drawing.Imaging.ImageLockMode.ReadOnly, bitmap.PixelFormat);
-
-            var bitmapSource = BitmapSource.Create(
-                bitmapData.Width, bitmapData.Height,
-                bitmap.HorizontalResolution, bitmap.VerticalResolution,
-                PixelFormats.Bgr24, null,
-                bitmapData.Scan0, bitmapData.Stride * bitmapData.Height, bitmapData.Stride);
-
-            bitmap.UnlockBits(bitmapData);
-
-            return bitmapSource;
         }
 
         /// <summary>
