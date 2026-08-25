@@ -734,7 +734,7 @@ namespace TnTCheckpoint
                     }
                 }
                 TempColor = GetColorAt(TempLocation);
-                Task.Delay(66, OrbitToken).Wait();
+                Task.Delay(33, OrbitToken).Wait();
                 if (OrbitToken.IsCancellationRequested) break;
             }
 
@@ -953,6 +953,10 @@ namespace TnTCheckpoint
                     case "!cleancheckpoints":
                         done = true;
                         CommandCleanCheckpoints(message);
+                        return;
+                    case "!gerbcheckpoint":
+                        done = true;
+                        CommandGerbCheckpoint(message);
                         return;
                 }
             if (verifying)
@@ -2790,7 +2794,7 @@ namespace TnTCheckpoint
                 SelectChar(charslot);
 
                 UpdateStatusBar("!HoldLoad... Joining fireteam.", UserStatusType.Idle);
-                bool worked = JoinFireteamFromOrbit("/join " + workingusername);
+                bool worked = JoinFireteamFromOrbit("/join " + workingusername, "");
                 if (!worked)
                 {
                     client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
@@ -3103,7 +3107,7 @@ namespace TnTCheckpoint
 
                 client.Rest.SendMessageAsync(message.ChannelId, "Checking to see if I can join...");
                 SelectChar(charslot);
-                bool worked = JoinFireteamFromOrbit("/join " + workingusername);
+                bool worked = JoinFireteamFromOrbit("/join " + workingusername, activity);
                 if (!worked)
                 {
                     client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
@@ -3128,7 +3132,7 @@ namespace TnTCheckpoint
 
                     UpdateStatusBar("!GrabCheckpoint... Awaiting wipe :3", UserStatusType.Idle);
 
-                    awaittext("fromlast", ConvertAspectRatioCoords(30.4296875, 16.3888888), ConvertAspectRatioCoords(39.6484375, 19.236111111)); //779 236 1015 277
+                    awaittext("last", ConvertAspectRatioCoords(35.6770833333, 16.3888888), ConvertAspectRatioCoords(39.6484375, 19.236111111));
 
                     statusheader = "!GrabCheckpoint command:";
                     statussubtext = "Wipe screen found. Waiting for wipe screen to clear.";
@@ -3246,8 +3250,9 @@ namespace TnTCheckpoint
                 "### !ForceOrbit\n" +
                 " - Has me attempt to change characters thru the settings menu, to rescue myself from a softlock of some kind. May not always work. At which point I will forget everything I was doing, and will need to be set back up for farms and stuff.\n" +
                 " - I will ask for confirmation twice before doing this.\n" +
-                " - Usage: !ForceOrbit\n" +
-                "### !FlyInCheckpointTransfer\n" +
+                " - Usage: !ForceOrbit\n").Wait();
+            client.Rest.SendMessageAsync(message.ChannelId,
+            "### !FlyInCheckpointTransfer\n" +
                 " - Transfers a checkpoint from you, to me, the hard way without using a darkness zone.\n" +
                 " - Warning, this requires a bit of cooperation, and will only work if your fireteam is set to open.\n" +
                 " - First, navigate on your director to the activity that has the checkpoint you want to transfer on it, and wait in orbit. Then run this command.\n" +
@@ -3897,21 +3902,23 @@ namespace TnTCheckpoint
             Thread.Sleep(101);
             _controller.SetButtonState(Xbox360Button.Start, false);
             AwaitColorChange(95, 5, 1);
+            Thread.Sleep(500);
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-            Thread.Sleep(1000);
+            Thread.Sleep(500);
 
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X,selectpos.Y);
+            Thread.Sleep(101);
             SendClick(selectpos);
 
-            AwaitColorChange(95, 10, 1);
-            Thread.Sleep(300);
+            Thread.Sleep(700);
 
             selectpos = ConvertAspectRatioCoords(14.8046875, 63.75);
             SetCursorPos(selectpos.X, selectpos.Y);
+            Thread.Sleep(101);
             SendClick(selectpos);
 
-            Thread.Sleep(400);
+            Thread.Sleep(700);
 
             SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
             Thread.Sleep(101);
@@ -4364,7 +4371,7 @@ namespace TnTCheckpoint
             sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
         }
 
-        private static bool JoinFireteamFromOrbit(string chat)
+        private static bool JoinFireteamFromOrbit(string chat, string activ) //add activity functionality for this. RON and Proph
         {
             statussubtext = "Typing in fireteam name...";
             UpdateTextDisplay();
@@ -4434,18 +4441,27 @@ namespace TnTCheckpoint
                     if (OrbitToken.IsCancellationRequested) return false;
                 }
 
-                AwaitColorChange(3, 3, 3); //come out of black screen
+                AwaitColorChange(3, 3, 1); //come out of black screen
 
-                statussubtext = "Join successful. Waiting for second black screen...";
-                UpdateTextDisplay();
+                DateTime bailout = DateTime.Now.AddSeconds(65);
 
-                while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black) //wait until on next black screen
+                if(activ != "RON" & activ != "PR")
                 {
-                    if (OrbitToken.IsCancellationRequested) return false;
+
+                    statussubtext = "Join successful. Waiting for second black screen...";
+                    UpdateTextDisplay();
+
+                    while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black) //wait until on next black screen
+                    {
+                        if (OrbitToken.IsCancellationRequested) return false;
+                        if (DateTime.Now > bailout) break;
+                    }
+
+                    if (DateTime.Now < bailout) AwaitColorChange(90, 90, 1); //come out of black screen, boots on ground
+
                 }
 
-                AwaitColorChange(90, 90, 3); //come out of black screen, boots on ground
-                Task.Delay(1000, OrbitToken).Wait();
+                Task.Delay(3000, OrbitToken).Wait();
 
                 statussubtext = "Join successful. Now boots on ground...";
                 UpdateTextDisplay();
@@ -4848,6 +4864,13 @@ namespace TnTCheckpoint
             double match = same / length;
 
             return match;
+        }
+
+        public static void CommandGerbCheckpoint(Message message)
+        {
+            client.Rest.SendMessageAsync(message.ChannelId, "gerbulating...");
+            Thread.Sleep(3000);
+            client.Rest.SendMessageAsync(message.ChannelId, "gerbulation failed :(");
         }
 
     }
