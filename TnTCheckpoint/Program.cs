@@ -966,6 +966,10 @@ namespace TnTCheckpoint
                         done = true;
                         CommandGerbCheckpoint(message);
                         return;
+                    case "!forcerestart":
+                        done = true;
+                        CommandForceRestart(message);
+                        return;
                 }
             if (verifying)
             {
@@ -993,11 +997,11 @@ namespace TnTCheckpoint
                         return;
                     case "!cancel":
                         verifying = false;
+                        verifylevel = 0;
                         done = true;
                         client.Rest.SendMessageAsync(message.ChannelId, "Verification cancelled.");
                         return;
                 }
-                ;
                 if (!done)
                 {
                     client.Rest.SendMessageAsync(message.ChannelId, "I'm currently waiting to verify a previous command. please be patient.");
@@ -1008,6 +1012,75 @@ namespace TnTCheckpoint
             {
                 client.Rest.SendMessageAsync(message.ChannelId, "Invalid command, run !listcommands to see all available commands.");
             }
+        }
+
+        private static async void CommandForceRestart(Message message)
+        {
+            //start a new thread so i can get more commands in the meantime. it doesnt matter here but it will in other places.
+
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+                //verify.
+                verifying = true;
+                verifylevel = 0;
+
+                string oldstatus = statusheader;
+                string oldsubtext = statussubtext;
+
+                statusheader = "Processing !ForceRestart command:";
+                statussubtext = "Awaiting first verification.";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!ForceRestart: Verification step 1/2", UserStatusType.Idle);
+
+                client.Rest.SendMessageAsync(message.ChannelId, "I want to make sure we're on the same page. This will make me forget what I was doing and send me back to character select.\nSend \"!verify\" to confirm, or \"!cancel\" to cancel.\nIf no response is given in 60 seconds I will cancel on my own.");
+
+                DateTime timeout = DateTime.Now.AddMinutes(1);
+                while (verifylevel == 0)
+                {
+                    if (!verifying) return;
+                    if (DateTime.Now > timeout)
+                    {
+                        verifying = false;
+                        verifylevel = 0;
+                        client.Rest.SendMessageAsync(message.ChannelId, "No valid response given in time. Continuing without returning to orbit.");
+
+                        statusheader = oldstatus;
+                        statussubtext = oldsubtext;
+                        UpdateTextDisplay();
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                    }
+                }
+                //verify again.
+
+                statusheader = "Processing !ForceRestart command:";
+                statussubtext = "Awaiting second verification.";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!ForceRestart: Verification step 2/2", UserStatusType.Idle);
+
+                client.Rest.SendMessageAsync(message.ChannelId, "I'm double checking. \"!verify\" to verify again, \"!cancel\" to cancel.");
+                timeout = DateTime.Now.AddMinutes(1);
+                while (verifylevel == 1)
+                {
+                    if (!verifying) return;
+                    if (DateTime.Now > timeout)
+                    {
+                        verifying = false;
+                        verifylevel = 0;
+                        client.Rest.SendMessageAsync(message.ChannelId, "No valid response given in time. Continuing without returning to orbit.");
+
+                        statusheader = oldstatus;
+                        statussubtext = oldsubtext;
+                        UpdateTextDisplay();
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                    }
+                }
+
+                D2Process.Kill();
+
+            }).Start();
         }
 
         private static async void CommandCleanCheckpoints(Message message)
@@ -1517,6 +1590,14 @@ namespace TnTCheckpoint
                             " - I will go thru, activity by activity, both normal and master and delete any erronious checkpoints I may have that I don't have record of.\n" +
                             " - This does require you to verify that you want to do it beforehand, as it takes about 30 minutes to go thru everything.\n" +
                             " - Usage: !CleanCheckpoints");
+                        done = true;
+                        return;
+                    case "forcerestart":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ForceRestart\n" +
+                            " - I will first verify you want to do this. Twice.\n" +
+                            " - After verifying, I will kill the d2 process, and then restart myself to have a \"blank slate\" so to speak, and to unstuck myself.\n" +
+                            " - Usage: !ForceRestart");
                         done = true;
                         return;
                 }
@@ -2317,12 +2398,11 @@ namespace TnTCheckpoint
                         }
                         Task.Delay(250, OrbitToken).Wait();
                     }
+
                     if (checkpointfarmmode == false) return;
 
                     statussubtext = "Awaiting first black screen.";
                     UpdateTextDisplay();
-
-                    Task.Delay(2000, OrbitToken).Wait();
 
                     DateTime bailout = DateTime.Now.AddSeconds(15);
 
@@ -2337,15 +2417,15 @@ namespace TnTCheckpoint
                             return;
                         }
 
-                        if (DateTime.Now > bailout) return;
+                        if (DateTime.Now > bailout) break;
                     }
 
                     UpdateStatusBar("!FarmCheckpoint... Returning to orbit to prep again.", UserStatusType.Idle);
 
-                    if (!checkpointfarmmode) return;
                     ReturnToCharSelectFast();
                 }
-
+                ReturnToCharSelect();
+                UpdateStatusBar("Idle...", UserStatusType.Online);
 
             }).Start();
         }
@@ -3325,7 +3405,11 @@ namespace TnTCheckpoint
                 "### !CleanCheckpoints\n" +
                 " - I will go thru, activity by activity, both normal and master and delete any erronious checkpoints I may have that I don't have record of.\n" +
                 " - This does require you to verify that you want to do it beforehand, as it takes about 30 minutes to go thru everything.\n" +
-                " - Usage: !CleanCheckpoints");
+                " - Usage: !CleanCheckpoints" +
+                "### !ForceRestart\n" +
+                " - I will first verify you want to do this. Twice.\n" +
+                " - After verifying, I will kill the d2 process, and then restart myself to have a \"blank slate\" so to speak, and to unstuck myself.\n" +
+                " - Usage: !ForceRestart");
 
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
@@ -4037,7 +4121,7 @@ namespace TnTCheckpoint
             SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
             Task.Delay(101, OrbitToken).Wait();
             SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
-            Task.Delay(500, OrbitToken).Wait();
+            Task.Delay(750, OrbitToken).Wait();
             black = GetColorAt(new Point(50, 50));
             AwaitColorChange(50, 50, 2);
             Task.Delay(3000, OrbitToken).Wait();
@@ -4951,12 +5035,11 @@ namespace TnTCheckpoint
 
         public static bool CheckBlackScreen()
         {
-            //5 point check for clarity sake
-            return (GetColorAt(ConvertAspectRatioCoords(25, 25)) == black & 
-                GetColorAt(ConvertAspectRatioCoords(75, 75)) == black & 
-                GetColorAt(ConvertAspectRatioCoords(25, 75)) == black & 
-                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black & 
-                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black);
+            //3 point check for clarity sake
+            if (GetColorAt(ConvertAspectRatioCoords(25, 75)) == black &
+                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black &
+                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black) return true;
+            return false;
         }
     }
 }
