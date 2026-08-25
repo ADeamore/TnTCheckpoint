@@ -4047,12 +4047,12 @@ namespace TnTCheckpoint
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
 
-        public static void CommandGerbCheckpoint(Message message)
+        public static async void CommandGerbCheckpoint(Message message)
         {
             client.Rest.SendMessageAsync(message.ChannelId, "gerbulating...");
             Thread.Sleep(3000);
             client.Rest.SendMessageAsync(message.ChannelId, "gerbulation failed :(");
-        }
+        } //this command is a bit for my discord. You're welcome to ignore or delete it.
 
         #endregion 
 
