@@ -3686,6 +3686,8 @@ namespace TnTCheckpoint
                         if (OrbitToken.IsCancellationRequested) return;
                         Task.Delay(3000, OrbitToken).Wait();
                         if (OrbitToken.IsCancellationRequested) return;
+
+                        InvitePlayer(workingusername);
                     }
 
                     _controller.SetButtonState(Xbox360Button.B, true);
