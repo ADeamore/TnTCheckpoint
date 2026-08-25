@@ -1894,7 +1894,7 @@ namespace TnTCheckpoint
 
                 DateTime bailout = DateTime.Now.AddSeconds(30);
 
-                while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black)
+                while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black))
                 {
                     if (OrbitToken.IsCancellationRequested)
                     {
@@ -2326,7 +2326,7 @@ namespace TnTCheckpoint
 
                     DateTime bailout = DateTime.Now.AddSeconds(15);
 
-                    while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black)
+                    while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black))
                     {
                         if (OrbitToken.IsCancellationRequested)
                         {
@@ -3276,11 +3276,7 @@ namespace TnTCheckpoint
                 " - I'll load the character the given checkpoint is on, and I'll wait in orbit for you to join. The moment you join I'll launch the activity, transferring the checkpoint on load-in. Then, I will return to orbit to wait to launch again. Use !EndFarm to end the farm. If you specify feats with the optional modifier, I will try to launch the checkpoint with those feats if applicable.\n" +
                 " - Viable Feats: Token, Phase, Battalions, Challenges, and Cutthroat. \n" +
                 " - usage: !FarmCheckpoint [activity shorthand (!activities)] [(optional)master] [(optional)feats:feat1name,feat2name,etc...] [single word name for the checkpoint of your choosing. a-z, 1-9 only] BungieUsername#0000 \n" +
-                " - example: !FarmCheckpoint EQ feats:tokenlimit,phaselimit shockyhands ItAvvy#7006\n" +
-                "### !CleanCheckpoints\n" +
-                " - I will go thru, activity by activity, both normal and master and delete any erronious checkpoints I may have that I don't have record of.\n" +
-                " - This does require you to verify that you want to do it beforehand, as it takes a while to go thru everything.\n" +
-                " - Usage: !CleanCheckpoints").Wait();
+                " - example: !FarmCheckpoint EQ feats:tokenlimit,phaselimit shockyhands ItAvvy#7006").Wait();
             client.Rest.SendMessageAsync(message.ChannelId,
                 "### !EndFarm: \n" +
                 " - I'll stop farming the given activity and shift into idle mode. I will then ask for you to run !verify to verify that you do in fact want to end the farm.\n" +
@@ -4490,7 +4486,7 @@ namespace TnTCheckpoint
                 statussubtext = "Join successful. Detecting first black screen...";
                 UpdateTextDisplay();
 
-                while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black) //wait until on next black screen
+                while (GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black) //wait until on next black screen. check 2 spots because theres all kinds of black in a lot of fly ins
                 {
                     if (OrbitToken.IsCancellationRequested) return false;
                 }
@@ -4505,7 +4501,7 @@ namespace TnTCheckpoint
                     statussubtext = "Join successful. Waiting for second black screen...";
                     UpdateTextDisplay();
 
-                    while (GetColorAt(ConvertAspectRatioCoords(50, 50)) != black) //wait until on next black screen
+                    while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black)) //wait until on next black screen
                     {
                         if (OrbitToken.IsCancellationRequested) return false;
                         if (DateTime.Now > bailout) break;
@@ -4611,7 +4607,7 @@ namespace TnTCheckpoint
                 if (OrbitToken.IsCancellationRequested) return false;
                 sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
 
-                while (GetColorAt(ConvertAspectRatioCoords(55, 55)) != black) //wait until on next black screen
+                while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black)) //wait until on next black screen
                 {
                     if (OrbitToken.IsCancellationRequested) return false;
                     Task.Delay(101, OrbitToken).Wait();
