@@ -1894,7 +1894,7 @@ namespace TnTCheckpoint
 
                 DateTime bailout = DateTime.Now.AddSeconds(30);
 
-                while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black))
+                while (!CheckBlackScreen())
                 {
                     if (OrbitToken.IsCancellationRequested)
                     {
@@ -2326,7 +2326,7 @@ namespace TnTCheckpoint
 
                     DateTime bailout = DateTime.Now.AddSeconds(15);
 
-                    while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black))
+                    while (!CheckBlackScreen())
                     {
                         if (OrbitToken.IsCancellationRequested)
                         {
@@ -2859,14 +2859,19 @@ namespace TnTCheckpoint
 
                     client.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!stopholding\" when you want me to stop.");
 
+                    Task.Delay(10000, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return;
+
                     //navigate to collections
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
                     //start, lb, lb, click lore tab
                     _controller.SetButtonState(Xbox360Button.Start, true);
@@ -2874,6 +2879,7 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.Start, false);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(1000, OrbitToken).Wait();
 
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
@@ -2881,25 +2887,31 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
                     Task.Delay(400, OrbitToken).Wait();
                     _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(1000, OrbitToken).Wait();
 
                     SendClick(new Point(0, 0));
                     Task.Delay(1000, OrbitToken).Wait();
                     SetCursorPos(ConvertAspectRatioCoords(68.395375, 60).X, ConvertAspectRatioCoords(68.395375, 60).Y);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(1000, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return;
 
                     _controller.SetButtonState(Xbox360Button.A, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     while (holdingload)
@@ -2907,6 +2919,7 @@ namespace TnTCheckpoint
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
                         Task.Delay(101, OrbitToken).Wait();
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                        if (OrbitToken.IsCancellationRequested) return;
                         Task.Delay(3000, OrbitToken).Wait();
                         if (OrbitToken.IsCancellationRequested) return;
                         if (!holdingload) break;
@@ -2914,6 +2927,7 @@ namespace TnTCheckpoint
                         _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                         Task.Delay(101, OrbitToken).Wait();
                         _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                        if (OrbitToken.IsCancellationRequested) return;
                         Task.Delay(3000, OrbitToken).Wait();
                         if (OrbitToken.IsCancellationRequested) return;
                     }
@@ -2921,14 +2935,17 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
+                    if (OrbitToken.IsCancellationRequested) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     ReturnToCharSelect();
@@ -4486,7 +4503,7 @@ namespace TnTCheckpoint
                 statussubtext = "Join successful. Detecting first black screen...";
                 UpdateTextDisplay();
 
-                while (GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black) //wait until on next black screen. check 2 spots because theres all kinds of black in a lot of fly ins
+                while (!CheckBlackScreen()) //wait until on next black screen. check 2 spots because theres all kinds of black in a lot of fly ins
                 {
                     if (OrbitToken.IsCancellationRequested) return false;
                 }
@@ -4501,7 +4518,7 @@ namespace TnTCheckpoint
                     statussubtext = "Join successful. Waiting for second black screen...";
                     UpdateTextDisplay();
 
-                    while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black)) //wait until on next black screen
+                    while (!CheckBlackScreen()) //wait until on next black screen
                     {
                         if (OrbitToken.IsCancellationRequested) return false;
                         if (DateTime.Now > bailout) break;
@@ -4607,7 +4624,7 @@ namespace TnTCheckpoint
                 if (OrbitToken.IsCancellationRequested) return false;
                 sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
 
-                while ((GetColorAt(ConvertAspectRatioCoords(25, 25)) != black & GetColorAt(ConvertAspectRatioCoords(75, 75)) != black)) //wait until on next black screen
+                while (!CheckBlackScreen()) //wait until on next black screen
                 {
                     if (OrbitToken.IsCancellationRequested) return false;
                     Task.Delay(101, OrbitToken).Wait();
@@ -4931,5 +4948,14 @@ namespace TnTCheckpoint
             client.Rest.SendMessageAsync(message.ChannelId, "gerbulation failed :(");
         }
 
+        public static bool CheckBlackScreen()
+        {
+            //5 point check for clarity sake
+            return (GetColorAt(ConvertAspectRatioCoords(25, 25)) == black & 
+                GetColorAt(ConvertAspectRatioCoords(75, 75)) == black & 
+                GetColorAt(ConvertAspectRatioCoords(25, 75)) == black & 
+                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black & 
+                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black);
+        }
     }
 }
