@@ -7,7 +7,7 @@ This is a bot initially designed specifically for my clans use. It requires a sa
 
 1. [.NET 10 sdk](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for runtimes
 2. [Vigembus](https://github.com/nefarius/ViGEmBus/releases) to emulate an xbox controller. This will need to be installed twice for some reason. If it's not installed the bot will get stuck in a loop.
-3. Windows 10 or higher.
+3. An unused computer running Windows 10 or higher.
 4. Your own [Discord Bot](https://discord.com/developers/) registered, complete with "Mesage Content" intent, currently added to the server you wish to have the bot in.
 5. A discord server you have admin permissions in.
 6. A sacrificial Destiny 2 account to be used as a bot, running specifically on Steam.
