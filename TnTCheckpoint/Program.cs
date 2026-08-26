@@ -1191,7 +1191,17 @@ namespace TnTCheckpoint
 
         #endregion
 
-        #region screenspace interaction and reading
+        #region screenspace interaction, delays, and reading
+
+        public static bool DelayWithBreak(int ms)
+        {
+            DateTime t = DateTime.Now.AddMilliseconds(ms);
+            while (t > DateTime.Now)
+            {
+                if (forceorbit) return true;
+            }
+            return false;
+        }
 
         public static async void AwaitColorChange(double percentageposx, double percentageposy, int count)
         {
@@ -1512,7 +1522,7 @@ namespace TnTCheckpoint
                         return;
                     case "!endhold":
                         done = true;
-                        CommandEndHoldCheckpoint(message);
+                        CommandEndHoldLoad(message);
                         return;
                     case "!grabcheckpoint":
                         done = true;
@@ -1674,7 +1684,7 @@ namespace TnTCheckpoint
                 D2Process.Kill();
 
             }).Start();
-        }
+        } 
 
         private static async void CommandCleanCheckpoints(Message message)
         {
@@ -2065,7 +2075,7 @@ namespace TnTCheckpoint
                     client.Rest.SendMessageAsync(message.ChannelId, "FlyInCheckpointTransfer complete. Back to idling...");
                 }
             }).Start();
-        }
+        } 
 
         private static async void CommandHelp(Message message)
         {
@@ -2221,7 +2231,7 @@ namespace TnTCheckpoint
                 }
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             }
-        } 
+        }  
 
         private static async void CommandForceOrbit(Message message)
         {
@@ -2368,7 +2378,7 @@ namespace TnTCheckpoint
 
                 UpdateStatusBar("Idle...", UserStatusType.Online);
             }).Start();
-        }
+        } 
 
         private static async void CommandTransferCheckpoint(Message message) 
         {
@@ -2643,17 +2653,17 @@ namespace TnTCheckpoint
                     if(DelayWithBreak(30)) return;
                 }
 
-                client.Rest.SendMessageAsync(message.ChannelId, "Returning to character select and going back to idling...");
-
                 transferingcheckpoint = false;
 
                 if (forceorbit) return;
                 ReturnToCharSelectFast();
 
+                client.Rest.SendMessageAsync(message.ChannelId, "Idling...");
+
                 UpdateStatusBar("Idle...", UserStatusType.Online);
 
             }).Start();
-        }
+        }  
 
         private static async void CommandWipe(Message message) 
         {
@@ -2699,7 +2709,7 @@ namespace TnTCheckpoint
                 }
 
             }).Start();
-        }
+        } 
 
         private static async void CommandEndFarm(Message message)
         {
@@ -2719,6 +2729,7 @@ namespace TnTCheckpoint
                 client.Rest.SendMessageAsync(message.ChannelId, "I want to make sure we're on the same page. This will make me forget what I was doing and send me back to character select.\nSend \"!verify\" to confirm, or \"!cancel\" to cancel.\nIf no response is given in 60 seconds I will cancel on my own.");
 
                 verifying = true;
+                verifylevel = 0;
 
                 DateTime timeout = DateTime.Now.AddMinutes(1);
                 while (verifylevel == 0)
@@ -3265,7 +3276,7 @@ namespace TnTCheckpoint
             {
                 client.Rest.SendMessageAsync(message.ChannelId, "I currently have no checkpoints. :(");
             }
-        }
+        } 
 
         private static async void CommandDeleteCheckpoint(Message message) 
         {
@@ -3445,9 +3456,9 @@ namespace TnTCheckpoint
             //check to see if the checkpoint exists. if it does, ask for confirmation. if not, make sure the user typed it correctly.
             //also make sure im not already waiting for confirmation somewhere.
             //if confirmed, delete checkpoint.
-        }
+        } 
 
-        private static async void CommandEndHoldCheckpoint(Message message) 
+        private static async void CommandEndHoldLoad(Message message) 
         {
             //check to see if im even holdling a checkpoint. 
             new Thread(() =>
@@ -3484,7 +3495,7 @@ namespace TnTCheckpoint
                 verifying = false;
                 holdingload = false;
             }).Start();
-        }
+        } 
 
         private static async void CommandHoldLoad(Message message) 
         {
@@ -3709,7 +3720,7 @@ namespace TnTCheckpoint
                     UpdateStatusBar("Idle...", UserStatusType.Online);
                 }
             }).Start();
-        }
+        } 
 
         private static async void CommandGrabCheckpoint(Message message)
         {
@@ -3988,7 +3999,7 @@ namespace TnTCheckpoint
                     UpdateStatusBar("Idle...", UserStatusType.Online);
                 }
             }).Start();
-        }
+        } 
 
         private static async void CommandActivities(Message message)
         {
@@ -4020,7 +4031,7 @@ namespace TnTCheckpoint
                 " - CR (Calus Resplendent) \n" +
                 " - MS (Morgeth Surpassing) \n" +
                 " - GAUNTLET (Full 7 boss pantheon)");
-        }
+        } 
 
         private static async void CommandListCommands(Message message)
         {
@@ -4037,7 +4048,7 @@ namespace TnTCheckpoint
                 " - **!DeleteCheckpoint:** I'll delete a checkpoint so that it may be replaced with another.\n").Wait();
             client.Rest.SendMessageAsync(message.ChannelId,
                 " - **!ListCheckpoints:** Used to list what checkpoints I have. \n" +
-                " - **!FarmCheckpoint:** Used to target farm a specific encounter." +
+                " - **!FarmCheckpoint:** Used to target farm a specific encounter.\n" +
                 " - **!EndFarm:** I'll stop farming the given activity and shift into idle mode.\n" +
                 " - **!TransferCheckpoint:** Used to transfer a checkpoint from me to you.\n" +
                 " - **!FlyInCheckpointTransfer:** Allows giving checkpoints to me without the use of a darkness zone or wipe. warning: complicated.\n" +
@@ -4046,7 +4057,7 @@ namespace TnTCheckpoint
                 " - **!ForceRestart:** Shuts down the entire bot and restarts it. Useful if \"!ForceOrbit\" is bugging out.\n");
 
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        }
+        } 
 
         public static async void CommandGerbCheckpoint(Message message)
         {
@@ -5007,16 +5018,6 @@ namespace TnTCheckpoint
 
                 ReturnToCharSelectFast();
             }
-        }
-
-        public static bool DelayWithBreak(int ms)
-        {
-            DateTime t = DateTime.Now.AddMilliseconds(ms);
-            while (t > DateTime.Now)
-            {
-                if (forceorbit) return true;
-            }
-            return false;
         }
 
         #endregion
