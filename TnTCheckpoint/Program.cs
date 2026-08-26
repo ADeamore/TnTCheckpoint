@@ -4535,16 +4535,6 @@ namespace TnTCheckpoint
                         _controller.SetButtonState(Xbox360Button.RightShoulder, false);
                         Task.Delay(3000).Wait();
                         if (!holdingload) break;
-
-                        SendClick(new Point(50, 50));
-
-                        InvitePlayer("/invite " + workingusername);
-                        Task.Delay(2000).Wait();
-
-                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
-                        Task.Delay(200).Wait();
-                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
-                        Task.Delay(10000).Wait();
                     }
 
                     client.Rest.SendMessageAsync(message.ChannelId, "Endhold command processed. Returning to orbit...");
