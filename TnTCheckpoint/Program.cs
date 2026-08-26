@@ -365,48 +365,6 @@ namespace TnTCheckpoint
                                                     PrepCharMenu(); 
 
                                                 }
-                                                else if (!initializing)
-                                                {
-                                                    //reset stuff
-                                                    if (DateTime.Now > ResetTime)
-                                                    {
-                                                        //reset has happened. need to restart everything to just scrub the surface clean and reset.
-
-                                                        // Starts a new instance of the program itself
-                                                        string appName = Assembly.GetEntryAssembly().GetName().Name;
-                                                        string loc = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-                                                        if (!File.Exists(loc + "\\reset.ini")) File.Create(loc + "\\reset.ini");
-
-                                                        loc = loc + "\\" + appName + ".exe"; //if you dont do it this way it gives a .dll file instead.
-                                                        System.Diagnostics.Process.Start(loc);
-
-                                                        // Closes the current process
-                                                        Environment.Exit(0);
-                                                    }
-
-                                                    //menu afk cycle
-                                                    if (oncharselect & !(checkpointfarmmode || holdingload || afkcycle || bootsonground || oncharselect || grabbingcheckpoint || cleaningcheckpoints))
-                                                    {
-                                                        //currently running afk timer
-                                                        if (DateTime.Now > afktimer)
-                                                        {
-                                                            UpdateStatusBar("AFK cycle", UserStatusType.DoNotDisturb);
-                                                            afkcycle = true;
-                                                            SelectChar(1);
-                                                            if(DelayWithBreak(5000)) return;
-                                                            afktimer = DateTime.Now.AddMinutes(55);
-                                                            ReturnToCharSelectFast();
-                                                            afkcycle = false;
-                                                            UpdateStatusBar("Idle...", UserStatusType.Online);
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        //push forward afk timer so once im done doing things it resumes with generous leeway.
-                                                        afktimer = DateTime.Now.AddMinutes(55);
-                                                    }
-                                                }
                                             }
                                         }
                                         else
@@ -434,32 +392,103 @@ namespace TnTCheckpoint
 
                 while (true)
                 {
-                    if (!closebuttonpressed)
+                    try
                     {
-                        if (Keyboard.IsPressed(0xA5))
-                        {
-                            oldstatus = statussubtext;
-                            closebuttonpressed = true;
-                            closetime = DateTime.Now.AddSeconds(5);
-                        }
+                        D2Process = Process.GetProcessesByName("destiny2").First();
                     }
-                    else
+                    catch
                     {
-                        if (!Keyboard.IsPressed(0xA5))
+                        D2Process = null;
+                    }
+
+                    if (!initializing)
+                    {
+                        if (D2Process == null)
                         {
-                            statussubtext = oldstatus;
-                            UpdateTextDisplay();
-                            closebuttonpressed = false;
-                            closetime = DateTime.MaxValue;
+                            //game crashed
+                            // Starts a new instance of the program itself
+                            string appName = Assembly.GetEntryAssembly().GetName().Name;
+                            string loc = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                            if (!File.Exists(loc + "\\reset.ini")) File.Create(loc + "\\reset.ini");
+
+                            loc = loc + "\\" + appName + ".exe"; //if you dont do it this way it gives a .dll file instead.
+                            System.Diagnostics.Process.Start(loc);
+
+                            // Closes the current process
+                            Environment.Exit(0);
                         }
                         else
                         {
-                            statussubtext = "Killing process... " + Math.Ceiling((closetime - DateTime.Now).TotalSeconds);
-                            UpdateTextDisplay();
-                            if (DateTime.Now > closetime)
+                            //reset stuff
+                            if (DateTime.Now > ResetTime)
                             {
-                                client.Rest.SendMessageAsync(ChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
-                                KillProcess();
+                                //reset has happened. need to restart everything to just scrub the surface clean and reset.
+
+                                // Starts a new instance of the program itself
+                                string appName = Assembly.GetEntryAssembly().GetName().Name;
+                                string loc = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                                if (!File.Exists(loc + "\\reset.ini")) File.Create(loc + "\\reset.ini");
+
+                                loc = loc + "\\" + appName + ".exe"; //if you dont do it this way it gives a .dll file instead.
+                                System.Diagnostics.Process.Start(loc);
+
+                                // Closes the current process
+                                Environment.Exit(0);
+                            }
+
+                            //menu afk cycle
+                            if (oncharselect & !(checkpointfarmmode || holdingload || afkcycle || bootsonground || oncharselect || grabbingcheckpoint || cleaningcheckpoints))
+                            {
+                                //currently running afk timer
+                                if (DateTime.Now > afktimer)
+                                {
+                                    UpdateStatusBar("AFK cycle", UserStatusType.DoNotDisturb);
+                                    afkcycle = true;
+                                    SelectChar(1);
+                                    if (DelayWithBreak(5000)) return;
+                                    afktimer = DateTime.Now.AddMinutes(55);
+                                    ReturnToCharSelectFast();
+                                    afkcycle = false;
+                                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                                }
+                            }
+                            else
+                            {
+                                //push forward afk timer so once im done doing things it resumes with generous leeway.
+                                afktimer = DateTime.Now.AddMinutes(55);
+                            }
+
+                            //close button stuff
+                            if (!closebuttonpressed)
+                            {
+                                if (Keyboard.IsPressed(0xA5))
+                                {
+                                    oldstatus = statussubtext;
+                                    closebuttonpressed = true;
+                                    closetime = DateTime.Now.AddSeconds(5);
+                                }
+                            }
+                            else
+                            {
+                                if (!Keyboard.IsPressed(0xA5))
+                                {
+                                    statussubtext = oldstatus;
+                                    UpdateTextDisplay();
+                                    closebuttonpressed = false;
+                                    closetime = DateTime.MaxValue;
+                                }
+                                else
+                                {
+                                    statussubtext = "Killing process... " + Math.Ceiling((closetime - DateTime.Now).TotalSeconds);
+                                    UpdateTextDisplay();
+                                    if (DateTime.Now > closetime)
+                                    {
+                                        client.Rest.SendMessageAsync(ChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
+                                        KillProcess();
+                                    }
+                                }
                             }
                         }
                     }
