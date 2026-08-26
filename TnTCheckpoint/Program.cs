@@ -1763,6 +1763,9 @@ namespace TnTCheckpoint
                 client.Rest.SendMessageAsync(message.ChannelId, "Cleaning checkpoints is done, I'm back to idling...");
 
                 cleaningcheckpoints = false;
+
+                UpdateStatusBar("Idle...", UserStatusType.Online);
+
             }).Start();
         }
 
@@ -1986,10 +1989,46 @@ namespace TnTCheckpoint
                 bool worked = JoinFireteamInOrbit("/join " + workingusername);
                 if (!worked)
                 {
-                    _controller.SetButtonState(Xbox360Button.B, true);
-                    if(DelayWithBreak(101)) return;
-                    _controller.SetButtonState(Xbox360Button.B, false);
-                    if(DelayWithBreak(101)) return;
+
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = (int)Math.Round(width * 0.073125);
+                    int iconheight = (int)Math.Round(height * 0.04362);
+                    Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
+                    int xpos = startcoords.X;
+                    int ypos = startcoords.Y;
+
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                    if (DelayWithBreak(1000)) return;
+
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
+
+                    if (ocrstring != "")
+                    {
+                        //make sure im in controller mode
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        if (DelayWithBreak(101)) return;
+
+                        _controller.SetButtonState(Xbox360Button.B, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.B, false);
+                        if (DelayWithBreak(101)) return;
+                    }
 
                     client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
                     grabbingcheckpoint = false;
@@ -3945,6 +3984,47 @@ namespace TnTCheckpoint
                     if (forceorbit) return;
                     client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
                     grabbingcheckpoint = false;
+
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = (int)Math.Round(width * 0.073125);
+                    int iconheight = (int)Math.Round(height * 0.04362);
+                    Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
+                    int xpos = startcoords.X;
+                    int ypos = startcoords.Y;
+
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                    if (DelayWithBreak(1000)) return;
+
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
+
+                    if(ocrstring != "")
+                    {
+                        //make sure im in controller mode
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        if (DelayWithBreak(101)) return;
+
+                        _controller.SetButtonState(Xbox360Button.B, true);
+                        if (DelayWithBreak(101)) return;
+                        _controller.SetButtonState(Xbox360Button.B, false);
+                        if (DelayWithBreak(101)) return;
+                    }
+
                     ReturnToCharSelectFast();
 
                     statusheader = "Idle...";
