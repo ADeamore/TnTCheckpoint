@@ -2499,11 +2499,11 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                statusheader = "!TransferAndHold command:";
+                statusheader = "!LaunchAndHold command:";
                 statussubtext = "Making sure the command is viable";
                 UpdateTextDisplay();
 
-                UpdateStatusBar("!TransferAndHold... Making sure the command is viable.", UserStatusType.Idle);
+                UpdateStatusBar("!LaunchAndHold... Making sure the command is viable.", UserStatusType.Idle);
 
                 transferingcheckpoint = true;
                 client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
@@ -2515,7 +2515,7 @@ namespace TnTCheckpoint
 
                 if (messagechunks.Length < 4)
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!TransferAndHold\" command.\nTry \"!help TransferAndHold\" to learn how to use it.");
+                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!LaunchAndHold\" command.\nTry \"!help LaunchAndHold\" to learn how to use it.");
                     transferingcheckpoint = false;
 
                     statusheader = "Idle...";
@@ -2529,7 +2529,7 @@ namespace TnTCheckpoint
                 string[] nameID = messagechunks.Last().Split("#");
                 if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!TransferAndHold\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help TransferAndHold\" to learn how to use it.");
+                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!LaunchAndHold\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help LaunchAndHold\" to learn how to use it.");
                     transferingcheckpoint = false;
 
                     statusheader = "Idle...";
@@ -2546,7 +2546,7 @@ namespace TnTCheckpoint
                 string[] keys = checkpoints.Keys.ToArray();
                 if (!keys.Contains(activity))
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help TransferAndHold\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help LaunchAndHold\" to learn how to use this command, or \"!activities\" to see what activities are available.");
                     transferingcheckpoint = false;
 
                     statusheader = "Idle...";
@@ -2570,7 +2570,7 @@ namespace TnTCheckpoint
                     master = true;
                     if (!keys.Contains("master" + activity))
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help TransferAndHold\" to learn how to use this command.");
+                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help LaunchAndHold\" to learn how to use this command.");
                         transferingcheckpoint = false;
 
                         statusheader = "Idle...";
@@ -2603,7 +2603,7 @@ namespace TnTCheckpoint
                 }
                 else
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help TransferAndHold\" to learn how to use this command, or \"!TransferAndHold\" to see what checkpoints I have.");
+                    client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help LaunchAndHold\" to learn how to use this command, or \"!LaunchAndHold\" to see what checkpoints I have.");
                     transferingcheckpoint = false;
 
                     statusheader = "Idle...";
@@ -2641,7 +2641,7 @@ namespace TnTCheckpoint
                 statussubtext = "Comparing red values to see launch button go red.";
                 UpdateTextDisplay();
 
-                UpdateStatusBar("!TransferAndHold... Waiting for " + workingusername + " to join.", UserStatusType.Idle);
+                UpdateStatusBar("!LaunchAndHold... Waiting for " + workingusername + " to join.", UserStatusType.Idle);
 
                 while (!change)
                 {
@@ -2668,7 +2668,7 @@ namespace TnTCheckpoint
                 statussubtext = "Button went red. Waiting for it to go back.";
                 UpdateTextDisplay();
 
-                UpdateStatusBar("!TransferAndHold... Detected join, Launching momentarily.", UserStatusType.Idle);
+                UpdateStatusBar("!LaunchAndHold... Detected join, Launching momentarily.", UserStatusType.Idle);
 
                 AwaitColorChange(95.859, 83.75, 1);
 
@@ -2745,8 +2745,8 @@ namespace TnTCheckpoint
 
                 holdingload = true;
 
-                UpdateStatusBar("!TransferAndHold... Currently holding load for " + workingdiscordname + ". Run !endhold to stop.", UserStatusType.Idle);
-                statusheader = "!TransferAndHold command:";
+                UpdateStatusBar("!LaunchAndHold... Currently holding load for " + workingdiscordname + ". Run !endhold to stop.", UserStatusType.Idle);
+                statusheader = "!LaunchAndHold command:";
                 statussubtext = "Boots on ground. Going to AFK macro.";
                 UpdateTextDisplay();
 
