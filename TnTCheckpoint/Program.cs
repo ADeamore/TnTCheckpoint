@@ -291,7 +291,6 @@ namespace TnTCheckpoint
                     new Thread(async () =>
                     {
                         Thread.CurrentThread.IsBackground = true;
-                        string oldstatus = "";
                         while (true)
                         {
                             try
@@ -421,42 +420,50 @@ namespace TnTCheckpoint
                                 }
                             }
 
-
-                            //close button stuff.
-
-                            if (!closebuttonpressed)
-                            {
-                                if (Keyboard.IsPressed(0xA5))
-                                {
-                                    oldstatus = statussubtext;
-                                    closebuttonpressed = true;
-                                    closetime = DateTime.Now.AddSeconds(5);
-                                }
-                            }
-                            else
-                            {
-                                if (!Keyboard.IsPressed(0xA5))
-                                {
-                                    statussubtext = oldstatus;
-                                    UpdateTextDisplay();
-                                    closebuttonpressed = false;
-                                    closetime = DateTime.MaxValue;
-                                }
-                                else
-                                {
-                                    statussubtext = "Killing process... " + Math.Ceiling((closetime - DateTime.Now).TotalSeconds);
-                                    UpdateTextDisplay();
-                                    if (DateTime.Now > closetime)
-                                    {
-                                        client.Rest.SendMessageAsync(ChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
-                                        KillProcess();
-                                    }
-                                }
-                            }
-
-                            if(DelayWithBreak(500)) return;
+                            Thread.Sleep(500);
                         }
                     }).Start();
+                }
+            }).Start();
+
+            new Thread(async () =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+                //close button stuff.
+                string oldstatus = "";
+
+                while (true)
+                {
+                    if (!closebuttonpressed)
+                    {
+                        if (Keyboard.IsPressed(0xA5))
+                        {
+                            oldstatus = statussubtext;
+                            closebuttonpressed = true;
+                            closetime = DateTime.Now.AddSeconds(5);
+                        }
+                    }
+                    else
+                    {
+                        if (!Keyboard.IsPressed(0xA5))
+                        {
+                            statussubtext = oldstatus;
+                            UpdateTextDisplay();
+                            closebuttonpressed = false;
+                            closetime = DateTime.MaxValue;
+                        }
+                        else
+                        {
+                            statussubtext = "Killing process... " + Math.Ceiling((closetime - DateTime.Now).TotalSeconds);
+                            UpdateTextDisplay();
+                            if (DateTime.Now > closetime)
+                            {
+                                client.Rest.SendMessageAsync(ChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
+                                KillProcess();
+                            }
+                        }
+                    }
+                    Thread.Sleep(500);
                 }
             }).Start();
 
@@ -1597,6 +1604,14 @@ namespace TnTCheckpoint
                         done = true;
                         verifylevel++;
                         return;
+                    case "!forcerestart":
+                        done = true;
+                        CommandForceRestart(message);
+                        return;
+                    case "!forceorbit":
+                        done = true;
+                        CommandForceOrbit(message);
+                        return;
                     case "!cancel":
                         verifying = false;
                         verifylevel = 0;
@@ -1623,6 +1638,14 @@ namespace TnTCheckpoint
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
+
+                if (verifying)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Stopping previous verification. Gimme 5 seconds...");
+                    verifying = false;
+                    Task.Delay(5000).Wait();
+                }
+
                 //verify.
                 verifying = true;
                 verifylevel = 0;
@@ -1652,6 +1675,7 @@ namespace TnTCheckpoint
                         statussubtext = oldsubtext;
                         UpdateTextDisplay();
                         UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
                     }
                 }
                 //verify again.
@@ -1677,9 +1701,13 @@ namespace TnTCheckpoint
                         statussubtext = oldsubtext;
                         UpdateTextDisplay();
                         UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
                     }
                 }
                 client.Rest.SendMessageAsync(message.ChannelId, "Restarting everything. o7").Wait();
+
+                verifying = false;
+                verifylevel = 0;
 
                 D2Process.Kill();
 
@@ -2279,6 +2307,14 @@ namespace TnTCheckpoint
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
+
+                if (verifying)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Stopping previous verification. Gimme 5 seconds...");
+                    verifying = false;
+                    Task.Delay(5000).Wait();
+                }
+
                 //verify.
                 verifying = true;
                 verifylevel = 0;
@@ -3713,13 +3749,13 @@ namespace TnTCheckpoint
                     while (holdingload)
                     {
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
-                        if(DelayWithBreak(101)) return;
+                        if(DelayWithBreak(200)) return;
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
                         if(DelayWithBreak(3000)) return;
                         if (!holdingload) break;
 
                         _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                        if(DelayWithBreak(101)) return;
+                        if(DelayWithBreak(200)) return;
                         _controller.SetButtonState(Xbox360Button.RightShoulder, false);
                         if(DelayWithBreak(3000)) return;
                         if (!holdingload) break;
@@ -3727,30 +3763,28 @@ namespace TnTCheckpoint
                         SendClick(new Point(50, 50));
 
                         InvitePlayer("/invite " + workingusername);
-                        if(DelayWithBreak(1000)) return;
-                        if (!holdingload) break;
+                        if(DelayWithBreak(2000)) return;
 
                         _controller.SetButtonState(Xbox360Button.RightThumb, true);
-                        if(DelayWithBreak(101)) return;
+                        if(DelayWithBreak(200)) return;
                         _controller.SetButtonState(Xbox360Button.RightThumb, false);
-                        if(DelayWithBreak(101)) return;
                         if(DelayWithBreak(10000)) return;
                     }
 
                     client.Rest.SendMessageAsync(message.ChannelId, "Endhold command processed. Returning to orbit...");
 
                     _controller.SetButtonState(Xbox360Button.B, true);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(200)) return;
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(500)) return;
                     _controller.SetButtonState(Xbox360Button.B, true);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(200)) return;
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(500)) return;
                     _controller.SetButtonState(Xbox360Button.B, true);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(200)) return;
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if(DelayWithBreak(101)) return;
+                    if(DelayWithBreak(500)) return;
 
                     ReturnToCharSelectFast();
 
@@ -4296,13 +4330,9 @@ namespace TnTCheckpoint
             int ypos = startcoords.Y;
 
             //make sure im in controller mode
-            _controller.SetButtonState(Xbox360Button.Y, true);
+            _controller.SetButtonState(Xbox360Button.RightThumb, true);
             if (DelayWithBreak(101)) return;
-            _controller.SetButtonState(Xbox360Button.Y, false);
-            if (DelayWithBreak(101)) return;
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            if (DelayWithBreak(101)) return;
-            _controller.SetButtonState(Xbox360Button.Y, false);
+            _controller.SetButtonState(Xbox360Button.RightThumb, false);
             if (DelayWithBreak(101)) return;
 
             statussubtext = "Return to orbit fast: Doing menuing to get back to character select...";
@@ -4312,7 +4342,7 @@ namespace TnTCheckpoint
             _controller.SetButtonState(Xbox360Button.Start, true);
             if (DelayWithBreak(101)) return;
             _controller.SetButtonState(Xbox360Button.Start, false);
-            AwaitColorChange(95, 5, 1);
+
             if (DelayWithBreak(500)) return;
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
             if (DelayWithBreak(500)) return;
@@ -4328,7 +4358,6 @@ namespace TnTCheckpoint
             SetCursorPos(selectpos.X, selectpos.Y);
             if (DelayWithBreak(101)) return;
             SendClick(selectpos);
-
             if (DelayWithBreak(700)) return;
 
             SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
