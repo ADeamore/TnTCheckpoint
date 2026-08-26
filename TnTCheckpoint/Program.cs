@@ -96,7 +96,6 @@ namespace TnTCheckpoint
         public static RECT d2window = new RECT();
         private static Process D2Process;
         private static bool startup = true;
-        private static Color black = Color.Black;
         private delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
         private static ViGEmClient? _client;
         private static IXbox360Controller? _controller;
@@ -113,6 +112,7 @@ namespace TnTCheckpoint
         public static bool verifying = false;
         public static bool transferingcheckpoint = false;
         public static bool deletingcheckpoint = false;
+        public static bool forceorbit = false;
         public static DateTime ResetTime = DateTime.MaxValue;
         public static bool initializing = true;
         public static string statusheader = "";
@@ -447,7 +447,11 @@ namespace TnTCheckpoint
                                 {
                                     statussubtext = "Killing process... " + Math.Ceiling((closetime - DateTime.Now).TotalSeconds);
                                     UpdateTextDisplay();
-                                    if (DateTime.Now > closetime) KillProcess();
+                                    if (DateTime.Now > closetime)
+                                    {
+                                        client.Rest.SendMessageAsync(ChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
+                                        KillProcess();
+                                    }
                                 }
                             }
 
@@ -1192,299 +1196,352 @@ namespace TnTCheckpoint
 
         public static async void AwaitColorChange(double percentageposx, double percentageposy, int count)
         {
-            long starttime = DateTime.Now.AddSeconds(60).Ticks;
-            int colorchangecount = 0;
-            Point TempLocation = ConvertAspectRatioCoords(percentageposx, percentageposy);
-            Color TempColor = GetColorAt(TempLocation);
-            Color col = TempColor;
-            bool worked = true;
-
-            visualupdates = colorchangecount;
-            visualupdatestotal = count;
-            visualupdatesx = TempLocation.X;
-            visualupdatesy = TempLocation.Y;
-            runningupdatedetection = true;
-            UpdateTextDisplay();
-
-            TempColor = GetColorAt(TempLocation);
-
-            while (colorchangecount < count)
+            try
             {
-                if (TempColor != col)
-                {
-                    //get average so that steady shifts dont count.
-                    double avg = (TempColor.R + TempColor.G + TempColor.B) / 3;
-                    double oldavg = (col.R + col.G + col.B) / 3;
-                    if (Math.Abs(oldavg - avg) > 9)
-                    {
-                        col = TempColor;
-                        colorchangecount++;
-                        starttime = DateTime.Now.AddSeconds(60).Ticks;
-                        System.Windows.Media.Color col2 = Colors.White;
-                        col2.R = TempColor.R;
-                        col2.G = TempColor.G;
-                        col2.B = TempColor.B;
+                long starttime = DateTime.Now.AddSeconds(60).Ticks;
+                int colorchangecount = 0;
+                Point TempLocation = ConvertAspectRatioCoords(percentageposx, percentageposy);
+                Color TempColor = GetColorAt(TempLocation);
+                Color col = TempColor;
+                bool worked = true;
 
-                        visualupdates = colorchangecount;
-                        visualupdatestotal = count;
-                        visualupdatesx = TempLocation.X;
-                        visualupdatesy = TempLocation.Y;
-                        UpdateTextDisplay();
-                    }
-                    else
+                visualupdates = colorchangecount;
+                visualupdatestotal = count;
+                visualupdatesx = TempLocation.X;
+                visualupdatesy = TempLocation.Y;
+                runningupdatedetection = true;
+                UpdateTextDisplay();
+
+                TempColor = GetColorAt(TempLocation);
+
+                while (colorchangecount < count)
+                {
+                    if (TempColor != col)
                     {
-                        if (DateTime.Now.Ticks > starttime)
+                        //get average so that steady shifts dont count.
+                        double avg = (TempColor.R + TempColor.G + TempColor.B) / 3;
+                        double oldavg = (col.R + col.G + col.B) / 3;
+                        if (Math.Abs(oldavg - avg) > 9)
                         {
-                            worked = false;
-                            break;
+                            col = TempColor;
+                            colorchangecount++;
+                            starttime = DateTime.Now.AddSeconds(60).Ticks;
+                            System.Windows.Media.Color col2 = Colors.White;
+                            col2.R = TempColor.R;
+                            col2.G = TempColor.G;
+                            col2.B = TempColor.B;
+
+                            visualupdates = colorchangecount;
+                            visualupdatestotal = count;
+                            visualupdatesx = TempLocation.X;
+                            visualupdatesy = TempLocation.Y;
+                            UpdateTextDisplay();
+                        }
+                        else
+                        {
+                            if (DateTime.Now.Ticks > starttime)
+                            {
+                                worked = false;
+                                break;
+                            }
                         }
                     }
+                    TempColor = GetColorAt(TempLocation);
+                    Task.Delay(33, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) break;
                 }
-                TempColor = GetColorAt(TempLocation);
-                Task.Delay(33, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) break;
+
+                runningupdatedetection = false;
+                UpdateTextDisplay();
+
+                if (forceorbit) return;
+                if (!worked)
+                {
+                    ReturnToCharSelectFast();
+                }
             }
-
-            runningupdatedetection = false;
-            UpdateTextDisplay();
-
-            if (OrbitToken.IsCancellationRequested) return;
-            if (!worked)
+            catch
             {
-                ReturnToCharSelectFast();
+
             }
         }
 
         public static async void SendClick(Point point)
         {
-            uint gox = (uint)point.X;
-            uint goy = (uint)point.Y;
-            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
-            Task.Delay(101).Wait();
-            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
+            try
+            {
+                uint gox = (uint)point.X;
+                uint goy = (uint)point.Y;
+                mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
+                Task.Delay(101).Wait();
+                mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         public static Color GetColorAt(Point coordinates)
         {
-            Bitmap ColorCheckBitmap = new Bitmap(1, 1);
+            try
+            {
+                Bitmap ColorCheckBitmap = new Bitmap(1, 1);
 
-            ColorCheckBitmap = new Bitmap(1, 1);
-            Rectangle bounds = new Rectangle(coordinates.X, coordinates.Y, 1, 1);
-            Graphics g = Graphics.FromImage(ColorCheckBitmap);
-            Size s = bounds.Size;
-            g.CopyFromScreen(bounds.Location, Point.Empty, s);
+                ColorCheckBitmap = new Bitmap(1, 1);
+                Rectangle bounds = new Rectangle(coordinates.X, coordinates.Y, 1, 1);
+                Graphics g = Graphics.FromImage(ColorCheckBitmap);
+                Size s = bounds.Size;
+                g.CopyFromScreen(bounds.Location, Point.Empty, s);
 
-            Color col = ColorCheckBitmap.GetPixel(0, 0);
+                Color col = ColorCheckBitmap.GetPixel(0, 0);
 
-            ColorCheckBitmap.Dispose();
-            g.Dispose();
+                ColorCheckBitmap.Dispose();
+                g.Dispose();
 
-            return col;
-        }
+                return col;
+            }
+            catch (ThreadInterruptedException)
+            {
+                return Color.White;
+            }
+}
 
         public static Point ConvertAspectRatioCoords(double xper, double yper)
         {
-            //convert to 16x9 for u.i. with a border for all math.
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-            double ratio = width * 1.0 / height;
-            double desiredratio = 16.0 / 9.0;
-            int leftbuffer = 0;
-            int topbuffer = 0;
-
-            if (ratio != desiredratio)
+            try
             {
-                if (ratio > desiredratio)
+                //convert to 16x9 for u.i. with a border for all math.
+                int width = d2window.Right - d2window.Left;
+                int height = d2window.Bottom - d2window.Top;
+                double ratio = width * 1.0 / height;
+                double desiredratio = 16.0 / 9.0;
+                int leftbuffer = 0;
+                int topbuffer = 0;
+
+                if (ratio != desiredratio)
                 {
-                    //width is too big
-                    int temp = (int)(height / 9 * 16);
-                    leftbuffer = (width - temp) / 2;
-                    width = temp;
+                    if (ratio > desiredratio)
+                    {
+                        //width is too big
+                        int temp = (int)(height / 9 * 16);
+                        leftbuffer = (width - temp) / 2;
+                        width = temp;
+                    }
+                    else
+                    {
+                        //height is too big
+                        int temp = (int)(width / 16 * 9);
+                        leftbuffer = (height - temp) / 2;
+                        height = temp;
+                    }
                 }
-                else
-                {
-                    //height is too big
-                    int temp = (int)(width / 16 * 9);
-                    leftbuffer = (height - temp) / 2;
-                    height = temp;
-                }
+
+                int pointx = (int)Math.Round(leftbuffer + (width * (xper / 100)));
+                int pointy = (int)Math.Round(topbuffer + (height * (yper / 100)));
+
+                return new Point(pointx, pointy);
             }
-
-            int pointx = (int)Math.Round(leftbuffer + (width * (xper / 100)));
-            int pointy = (int)Math.Round(topbuffer + (height * (yper / 100)));
-
-            return new Point(pointx, pointy);
+            catch (ThreadInterruptedException)
+            {
+                return new Point(0, 0);
+            }
         }
 
         public static string GetText(Bitmap imgsource)
         {
-            var ocrtext = string.Empty;
-            using (var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default))
+            try
             {
-                engine.SetVariable("tessedit_char_whitelist", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':()");
-                using (var img = PixConverter.ToPix(imgsource))
+                var ocrtext = string.Empty;
+                using (var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default))
                 {
-                    using (var page = engine.Process(img))
+                    engine.SetVariable("tessedit_char_whitelist", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':()");
+                    using (var img = PixConverter.ToPix(imgsource))
                     {
-                        ocrtext = page.GetText();
+                        using (var page = engine.Process(img))
+                        {
+                            ocrtext = page.GetText();
+                        }
                     }
                 }
-            }
 
-            return ocrtext;
+                return ocrtext;
+            }
+            catch (ThreadInterruptedException)
+            {
+                return "";
+            }
         }
 
         public static void awaittext(string inputtext, Point coordinatepointstart, Point coordinatepointend)
         {
-            string currenttext = "";
-            bool match = false;
-            while (StringDifference(inputtext, currenttext) < .9)
+            try
             {
-                if (OrbitToken.IsCancellationRequested) return;
-                int width = d2window.Right - d2window.Left;
-                int height = d2window.Bottom - d2window.Top;
-                int iconwidth = coordinatepointend.X - coordinatepointstart.X;
-                int iconheight = coordinatepointend.Y - coordinatepointstart.Y;
-                int xpos = coordinatepointstart.X;
-                int ypos = coordinatepointstart.Y;
+                string currenttext = "";
+                bool match = false;
+                while (StringDifference(inputtext, currenttext) < .9)
+                {
+                    if (forceorbit) return;
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = coordinatepointend.X - coordinatepointstart.X;
+                    int iconheight = coordinatepointend.Y - coordinatepointstart.Y;
+                    int xpos = coordinatepointstart.X;
+                    int ypos = coordinatepointstart.Y;
 
-                Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                Graphics g = Graphics.FromImage(bmpScreenshot);
-                Task.Delay(500, OrbitToken).Wait();
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    Task.Delay(500, OrbitToken).Wait();
 
-                g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                Task.Delay(500, OrbitToken).Wait();
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    Task.Delay(500, OrbitToken).Wait();
 
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
 
-                Task.Delay(500, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
+                    Task.Delay(500, OrbitToken).Wait();
+                    if (forceorbit) return;
 
-                string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                bmpScreenshot.Dispose();
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
 
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-                currenttext = ocrstring;
+                    Task.Delay(1000, OrbitToken).Wait();
+                    if (forceorbit) return;
+                    currenttext = ocrstring;
+                }
+            }
+            catch (ThreadInterruptedException)
+            {
+
             }
         }
 
         public static double StringDifference(string s1, string s2)
         {
-            char[] c1 = s1.ToLower().ToArray();
-            char[] c2 = s2.ToLower().ToArray();
-
-            int length = c1.Count();
-            if (c2.Count() < length) length = c2.Count();
-
-            if (length == 0) return 0;
-
-            double same = 0;
-            for (int i = 0; i < length; i++)
+            try
             {
-                if (c1[i] == c2[i]) same++;
+                char[] c1 = s1.ToLower().ToArray();
+                char[] c2 = s2.ToLower().ToArray();
+
+                int length = c1.Count();
+                if (c2.Count() < length) length = c2.Count();
+
+                if (length == 0) return 0;
+
+                double same = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    if (c1[i] == c2[i]) same++;
+                }
+
+                double match = same / length;
+
+                return match;
             }
-
-            double match = same / length;
-
-            return match;
+            catch (ThreadInterruptedException)
+            {
+                return 0;
+            }
         }
 
         public static bool CheckBlackScreen()
         {
-            //3 point check for clarity sake
-            if (GetColorAt(ConvertAspectRatioCoords(25, 75)) == black &
-                GetColorAt(ConvertAspectRatioCoords(75, 25)) == black &
-                GetColorAt(ConvertAspectRatioCoords(50, 50)) == black) return true;
-            return false;
+            try
+            {
+                Color col1 = GetColorAt(ConvertAspectRatioCoords(25, 75));
+                int avg1 = (col1.R + col1.G + col1.B) / 3;
+                Color col2 = GetColorAt(ConvertAspectRatioCoords(75, 25));
+                int avg2 = (col2.R + col2.G + col2.B) / 3;
+                Color col3 = GetColorAt(ConvertAspectRatioCoords(50, 50));
+                int avg3 = (col3.R + col3.G + col3.B) / 3;
+
+                //3 point check for clarity sake
+                if (avg1 < 10 &
+                    avg2 < 10 &
+                    avg3 < 10) 
+                {
+                    //its dark
+                    if(avg1 == avg2 & avg2 == avg3) return true; //its all the same shade as well
+                }
+                return false;
+            }
+            catch (ThreadInterruptedException)
+            {
+                return false;
+            }
         }
 
         public static bool CheckCharSelect()
         {
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-
-            int iconwidth = (int)Math.Round(width * 0.071484);
-            int iconheight = (int)Math.Round(height * 0.025695);
-            Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            //make sure im in controller mode
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-
-            statussubtext = "Return to orbit: Double checking I'm not already on character select.";
-            UpdateTextDisplay();
-            bool works = false;
-            string ocrstring = "";
-
-            bool select = false;
-
-            while (!works)
+            try
             {
-                if (OrbitToken.IsCancellationRequested) return true;
-                try
-                {
-                    Thread.Sleep(101);
-                    _controller.SetButtonState(Xbox360Button.B, true);
-                    Thread.Sleep(101);
-                    _controller.SetButtonState(Xbox360Button.B, false);
-                    Thread.Sleep(2500);
-                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    Graphics g = Graphics.FromImage(bmpScreenshot);
-                    Thread.Sleep(500);
-                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                    Thread.Sleep(200);
-                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-50, 0));
-                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-                    Thread.Sleep(500);
+                //make sure im in mnk mode
+                mouse_event((uint)MouseEvents.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+                Task.Delay(101).Wait();
+                mouse_event((uint)MouseEvents.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+                Task.Delay(101).Wait();
 
-                    ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-                    works = true;
-                }
-                catch
-                {
+                int width = d2window.Right - d2window.Left;
+                int height = d2window.Bottom - d2window.Top;
 
-                }
-            }
+                Point startcoords = ConvertAspectRatioCoords(0.5, 95.972222222);
+                Point endcoords = ConvertAspectRatioCoords(14.0625, 98.75);
+                int iconwidth = (int)endcoords.X - startcoords.X;
+                int iconheight = (int)endcoords.Y - startcoords.Y;
 
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
+                int xpos = startcoords.X;
+                int ypos = startcoords.Y;
 
-            if (ocrstring.Contains("areyou"))
-            {
-                statussubtext = "Return to orbit: Turns out I'm already there. Going to idle...";
+                statussubtext = "Return to orbit: Double checking I'm not already on character select.";
                 UpdateTextDisplay();
 
-                Thread.Sleep(500);
-                SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
-                SendClick(new Point(50, 50));
-                Thread.Sleep(200);
-                SendClick(new Point(50, 50));
-                oncharselect = true;
-                select = true;
-            }
+                bool works = false;
+                string ocrstring = "";
+                bool select = false;
 
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.B, false);
-            return select;
+                while (!works)
+                {
+                    if (OrbitToken.IsCancellationRequested) return true;
+                    try
+                    {
+                        Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                        Graphics g = Graphics.FromImage(bmpScreenshot);
+                        Thread.Sleep(500);
+                        g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                        Thread.Sleep(200);
+                        bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                        bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-50, 0));
+                        bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                        bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                        bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+                        Thread.Sleep(500);
+
+                        ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                        works = true;
+                    }
+                    catch
+                    {
+
+                    }
+                }
+
+                if (ocrstring.Contains("exittodesktop"))
+                {
+                    statussubtext = "Return to orbit: Turns out I'm already there. Going to idle...";
+                    UpdateTextDisplay();
+                    oncharselect = true;
+                    select = true;
+                }
+
+                return select;
+            }
+            catch (ThreadInterruptedException)
+            {
+                return false;
+            }
         }
 
         #endregion
@@ -1519,7 +1576,7 @@ namespace TnTCheckpoint
                         return;
                     case "!holdload":
                         done = true;
-                        CommandHoldCheckpoint(message);
+                        CommandHoldLoad(message);
                         return;
                     case "!endhold":
                         done = true;
@@ -1680,6 +1737,7 @@ namespace TnTCheckpoint
                         UpdateStatusBar("Idle...", UserStatusType.Online);
                     }
                 }
+                client.Rest.SendMessageAsync(message.ChannelId, "Restarting everything. o7").Wait();
 
                 D2Process.Kill();
 
@@ -1688,90 +1746,115 @@ namespace TnTCheckpoint
 
         private static async void CommandCleanCheckpoints(Message message)
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                while (afkcycle)
+                try
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
-                }
 
-                if (!oncharselect)
+                    while (afkcycle)
+                    {
+                        if (forceorbit) return;
+                    }
+
+                    if (!oncharselect)
+                    {
+                        if (transferingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (holdingload)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (checkpointfarmmode)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (grabbingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (deletingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (cleaningcheckpoints)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
+                        return;
+                    }
+
+                    statusheader = "!CleanCheckpoints command:";
+                    statussubtext = "Making sure the command is viable";
+                    UpdateTextDisplay();
+
+                    verifying = true;
+                    verifylevel = 0;
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "This command takes about 30 minutes to run. I want to make sure we're on the same page here. run \"!verify\" to proceed.");
+
+                    DateTime timeout = DateTime.Now.AddMinutes(1);
+                    while (verifylevel == 0)
+                    {
+                        if (!verifying) return;
+                        if (DateTime.Now > timeout)
+                        {
+                            verifying = false;
+                            verifylevel = 0;
+                            client.Rest.SendMessageAsync(message.ChannelId, "No valid response given in time. Continuing without returning to orbit.");
+                        }
+                    }
+                    verifying = false;
+                    cleaningcheckpoints = true;
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now cleaning checkpoints. Estimated finish time is 30 minutes after this message.");
+
+                    CleanCheckpoints();
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "Cleaning checkpoints is done, I'm back to idling...");
+
+                    cleaningcheckpoints = false;
+
+
+                }
+                catch (ThreadInterruptedException)
                 {
-                    if (transferingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (holdingload)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (checkpointfarmmode)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (grabbingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (deletingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (cleaningcheckpoints)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
-                    return;
+
                 }
+            });
+            thread.Start();
 
-                statusheader = "!CleanCheckpoints command:";
-                statussubtext = "Making sure the command is viable";
-                UpdateTextDisplay();
-
-                verifying = true;
-                verifylevel = 0;
-
-                client.Rest.SendMessageAsync(message.ChannelId, "This command takes about 30 minutes to run. I want to make sure we're on the same page here. run \"!verify\" to proceed.");
-
-                DateTime timeout = DateTime.Now.AddMinutes(1);
-                while (verifylevel == 0)
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (cleaningcheckpoints)
                 {
-                    if (!verifying) return;
-                    if (DateTime.Now > timeout)
+                    if (forceorbit)
                     {
-                        verifying = false;
-                        verifylevel = 0;
-                        client.Rest.SendMessageAsync(message.ChannelId, "No valid response given in time. Continuing without returning to orbit.");
+                        thread.Interrupt();
                     }
                 }
-                verifying = false;
-                cleaningcheckpoints = true;
-
-                client.Rest.SendMessageAsync(message.ChannelId, "I'm now cleaning checkpoints. Estimated finish time is 30 minutes after this message.");
-
-                CleanCheckpoints();
-
-                client.Rest.SendMessageAsync(message.ChannelId, "Cleaning checkpoints is done, I'm back to idling...");
-
-                cleaningcheckpoints = false;
-
             }).Start();
         }
 
         private static async void CommandFlyInCheckpointTransfer(Message message)
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
+
+                try
+                {
 
                 //make sure reset hasnt happened yet.
                 if (checkreset())
@@ -1789,7 +1872,7 @@ namespace TnTCheckpoint
 
                 while (afkcycle)
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                 }
 
                 if (!oncharselect)
@@ -1987,8 +2070,14 @@ namespace TnTCheckpoint
                 bool worked = JoinFireteamInOrbit("/join " + workingusername);
                 if (!worked)
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
+                        _controller.SetButtonState(Xbox360Button.B, true);
+                        Task.Delay(101, OrbitToken).Wait();
+                        _controller.SetButtonState(Xbox360Button.B, false);
+                        Task.Delay(101, OrbitToken).Wait();
+
+                        client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
                     grabbingcheckpoint = false;
+
                     ReturnToCharSelectFast();
 
                     statusheader = "Idle...";
@@ -2011,29 +2100,29 @@ namespace TnTCheckpoint
 
                     //return to char select, then see if the checkpoint saved.
                     ReturnToCharSelectFast();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     SelectChar(charslot);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     SelectDirector();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     SelectPortal();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(400, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     SelectActivity(activity);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     if (master) SelectMaster();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     Task.Delay(2000, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     //highlight over the play button just to have a consistent location for the checkpoint on screen.
                     SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
 
                     Task.Delay(1000, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     Color checkpoint = GetColorAt(ConvertAspectRatioCoords(66.640625, 77.0138889));
 
@@ -2061,9 +2150,9 @@ namespace TnTCheckpoint
 
                     grabbingcheckpoint = false;
                     bootsonground = false;
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     ReturnToCharSelectFast();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     statusheader = "Idle...";
                     statussubtext = "";
@@ -2072,9 +2161,27 @@ namespace TnTCheckpoint
                     UpdateStatusBar("Idle...", UserStatusType.Online);
 
                     client.Rest.SendMessageAsync(message.ChannelId, "FlyInCheckpointTransfer complete. Back to idling...");
+                    }
+
+                }
+                catch (ThreadInterruptedException)
+                {
+
+                }
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (grabbingcheckpoint)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
                 }
             }).Start();
-
         }
 
         private static async void CommandHelp(Message message)
@@ -2305,6 +2412,11 @@ namespace TnTCheckpoint
                 //change characters. 
                 client.Rest.SendMessageAsync(message.ChannelId, "Returning to orbit and forgetting what I was doing...");
                 //reset all running variables. forget about farms. forget about holding loads. etc... fresh start.
+                
+                forceorbit = true;
+
+                OrbitTokenSource.Cancel();
+                Task.Delay(5000).Wait();
 
                 holdingload = false;
                 checkpointfarmmode = false;
@@ -2316,11 +2428,8 @@ namespace TnTCheckpoint
                 transferingcheckpoint = false;
                 cleaningcheckpoints = false;
 
-                OrbitTokenSource.Cancel();
-
-                Task.Delay(10000).Wait();
-
                 OrbitTokenSource.TryReset();
+                forceorbit = false;
 
                 _controller.SetButtonState(Xbox360Button.A, false);
                 Task.Delay(101).Wait();
@@ -2364,7 +2473,15 @@ namespace TnTCheckpoint
                 Task.Delay(101).Wait();
 
                 UpdateStatusBar("!ForceOrbit: Returning to orbit as safely as possible...", UserStatusType.Idle);
+
+                SendClick(new Point(50, 50));
+                Task.Delay(101).Wait();
+                SendClick(new Point(50, 50));
+                Task.Delay(101).Wait();
+
                 ReturnToCharSelectForceful();
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Now back in orbit and Idling...");
 
                 UpdateStatusBar("Idle...", UserStatusType.Online);
             }).Start();
@@ -2372,10 +2489,12 @@ namespace TnTCheckpoint
 
         private static async void CommandTransferCheckpoint(Message message) 
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
+                try
+                {
                 //make sure reset hasnt happened yet.
                 if (checkreset())
                 {
@@ -2392,7 +2511,7 @@ namespace TnTCheckpoint
 
                 while (afkcycle)
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                 }
 
                 if (!oncharselect)
@@ -2572,7 +2691,7 @@ namespace TnTCheckpoint
                 statussubtext = "Comparing red values to see launch button go red.";
                 UpdateTextDisplay();
 
-                if (OrbitToken.IsCancellationRequested) return;
+                if (forceorbit) return;
 
                 UpdateStatusBar("!TransferCheckpoint... Waiting for " + workingusername + " to join.", UserStatusType.Idle);
 
@@ -2585,7 +2704,7 @@ namespace TnTCheckpoint
                         if (spotcolor2.G != 0) change = true;
                     }
 
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     if (DateTime.Now > time)
                     {
@@ -2614,7 +2733,7 @@ namespace TnTCheckpoint
 
                 Task.Delay(2000,OrbitToken).Wait();
 
-                if (OrbitToken.IsCancellationRequested) return;
+                if (forceorbit) return;
                 change = false;
 
                 while (!change)
@@ -2628,7 +2747,7 @@ namespace TnTCheckpoint
 
                     SendClick(pointclick);
 
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     Task.Delay(250, OrbitToken).Wait();
                 }
@@ -2636,75 +2755,117 @@ namespace TnTCheckpoint
                 statussubtext = "Awaiting first black screen.";
                 UpdateTextDisplay();
 
-                Task.Delay(2000, OrbitToken).Wait();
+                Task.Delay(3000, OrbitToken).Wait();
 
-                if (OrbitToken.IsCancellationRequested) return;
+                if (forceorbit) return;
 
                 DateTime bailout = DateTime.Now.AddSeconds(30);
 
                 while (!CheckBlackScreen())
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     if (DateTime.Now > bailout) break;
+                    Task.Delay(30).Wait();
                 }
 
                 client.Rest.SendMessageAsync(message.ChannelId, "Returning to character select and going back to idling...");
 
                 transferingcheckpoint = false;
 
-                if (OrbitToken.IsCancellationRequested) return;
+                if (forceorbit) return;
                 ReturnToCharSelectFast();
 
                 UpdateStatusBar("Idle...", UserStatusType.Online);
 
+
+                }
+                catch (ThreadInterruptedException)
+                {
+
+                }
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (transferingcheckpoint)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
+                }
             }).Start();
         }
 
         private static async void CommandWipe(Message message) 
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
-                //check if im currently grabbing a checkpoint.
-                if (grabbingcheckpoint)
-                {
-                    statussubtext = "Queued wipe command...";
-                    UpdateTextDisplay();
 
-                    client.Rest.SendMessageAsync(message.ChannelId, "Making sure im boots on the ground, so that I can wipe.");
-                    //check if im boots on the ground. idk how yet. maybe trying to swap menus with dpad and seeing what happens?
-                    while (!bootsonground)
+                try
+                {
+                    //check if im currently grabbing a checkpoint.
+                    if (grabbingcheckpoint)
                     {
-                        //add in a contengency to bail out if someone forces the bot to orbit.
-                        if (OrbitToken.IsCancellationRequested) return;
+                        statussubtext = "Queued wipe command...";
+                        UpdateTextDisplay();
+
+                        client.Rest.SendMessageAsync(message.ChannelId, "Making sure im boots on the ground, so that I can wipe.");
+                        //check if im boots on the ground. idk how yet. maybe trying to swap menus with dpad and seeing what happens?
+                        while (!bootsonground)
+                        {
+                            //add in a contengency to bail out if someone forces the bot to orbit.
+                            if (forceorbit) return;
+                        }
+                        if (forceorbit) return;
+                        //lmao explode.
+
+                        statussubtext = "Wipe Command: Detonating :3";
+                        UpdateTextDisplay();
+
+                        _controller.SetAxisValue(Xbox360Axis.RightThumbY, STICK_BACK);
+                        _controller.SetButtonState(Xbox360Button.Y, true);
+                        Task.Delay(2000, OrbitToken).Wait();
+                        _controller.SetButtonState(Xbox360Button.Y, false);
+                        if (forceorbit) return;
+                        Task.Delay(2000, OrbitToken).Wait();
+                        _controller.SetAxisValue(Xbox360Axis.RightThumbY, STICK_CENTER);
+                        if (forceorbit) return;
+                        _controller.SetSliderValue(Xbox360Slider.RightTrigger, TRIGGER_PULLED);
+                        Task.Delay(1000, OrbitToken).Wait();
+                        if (forceorbit) return;
+                        _controller.SetSliderValue(Xbox360Slider.RightTrigger, TRIGGER_RELEASED);
+                        client.Rest.SendMessageAsync(message.ChannelId, ":boom::white_check_mark: :3");
+
+                        statussubtext = "Wipe Command: I hope this worked.";
+                        UpdateTextDisplay();
                     }
-                    if (OrbitToken.IsCancellationRequested) return;
-                    //lmao explode.
+                    else
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm not currently grabbing a checkpoint. That's so rude to ask me to do right now.");
+                    }
 
-                    statussubtext = "Wipe Command: Detonating :3";
-                    UpdateTextDisplay();
-
-                    _controller.SetAxisValue(Xbox360Axis.RightThumbY, STICK_BACK);
-                    _controller.SetButtonState(Xbox360Button.Y, true);
-                    Task.Delay(2000, OrbitToken).Wait();
-                    _controller.SetButtonState(Xbox360Button.Y, false);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    Task.Delay(2000, OrbitToken).Wait();
-                    _controller.SetAxisValue(Xbox360Axis.RightThumbY, STICK_CENTER);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    _controller.SetSliderValue(Xbox360Slider.RightTrigger, TRIGGER_PULLED);
-                    Task.Delay(1000, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
-                    _controller.SetSliderValue(Xbox360Slider.RightTrigger, TRIGGER_RELEASED);
-                    client.Rest.SendMessageAsync(message.ChannelId, ":boom::white_check_mark: :3");
-
-                    statussubtext = "Wipe Command: I hope this worked.";
-                    UpdateTextDisplay();
                 }
-                else
+                catch (ThreadInterruptedException)
                 {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I'm not currently grabbing a checkpoint. That's so rude to ask me to do right now.");
+
+                }
+
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                while (grabbingcheckpoint)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
                 }
             }).Start();
         }
@@ -2756,132 +2917,82 @@ namespace TnTCheckpoint
 
         private static async void CommandFarmCheckpoint(Message message)
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                //make sure reset hasnt happened yet.
-                if (checkreset())
+                try
                 {
-                    initializing = true;
-                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
-                    InitializeCheckpoints();
-                    GetToDirectorForActivityCoords();
-                    CleanCheckpoints();
-                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
-
-                    initializing = false;
-                    return;
-                }
-
-                while (afkcycle)
-                {
-                    if (OrbitToken.IsCancellationRequested) return;
-                }
-
-                if (!oncharselect)
-                {
-                    if (transferingcheckpoint)
+                    //make sure reset hasnt happened yet.
+                    if (checkreset())
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        initializing = true;
+                        client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
+                        InitializeCheckpoints();
+                        GetToDirectorForActivityCoords();
+                        CleanCheckpoints();
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
+
+                        initializing = false;
                         return;
                     }
-                    if (holdingload)
+
+                    while (afkcycle)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        if (forceorbit) return;
+                    }
+
+                    if (!oncharselect)
+                    {
+                        if (transferingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (holdingload)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (checkpointfarmmode)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (grabbingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (deletingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (cleaningcheckpoints)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                         return;
                     }
-                    if (checkpointfarmmode)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (grabbingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (deletingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (cleaningcheckpoints)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
-                    return;
-                }
 
-                statusheader = "!FarmCheckpoint command:";
-                statussubtext = "Making sure the command is viable";
-                UpdateTextDisplay();
-
-                UpdateStatusBar("!FarmCheckpoint... Validating command.", UserStatusType.Idle);
-
-                checkpointfarmmode = true;
-
-                //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
-                string[] messagechunks = message.Content.Split(" ");
-
-                //!FarmCheckpoint [activity shorthand (!activities)] [(optional)master] [(optional)feats:feat1name,feat2name,etc...] [single word name for the checkpoint of your choosing. a-z, 1-9 only] BungieUsername#0000
-                if (messagechunks.Length < 4)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!FarmCheckpoint\" command.\nTry \"!help FarmCheckpoint\" to learn how to use it.");
-                    checkpointfarmmode = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
+                    statusheader = "!FarmCheckpoint command:";
+                    statussubtext = "Making sure the command is viable";
                     UpdateTextDisplay();
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
 
-                string[] nameID = messagechunks.Last().Split("#");
-                if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!FarmCheckpoint\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help FarmCheckpoint\" to learn how to use it.");
-                    checkpointfarmmode = false;
+                    UpdateStatusBar("!FarmCheckpoint... Validating command.", UserStatusType.Idle);
 
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
+                    checkpointfarmmode = true;
 
-                string activity = messagechunks[1].ToUpper();
-                string activitykey = activity;
+                    //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
+                    string[] messagechunks = message.Content.Split(" ");
 
-                string[] keys = checkpoints.Keys.ToArray();
-                if (!keys.Contains(activity))
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help FarmCheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
-                    checkpointfarmmode = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-                bool master = false;
-                string ckpointname = messagechunks[2];
-
-                workingdiscordname = message.Author.Username;
-                if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
-                int namestartindex = 3;
-
-                if (messagechunks[2].ToLower() == "master")
-                {
-                    namestartindex = 4;
-                    ckpointname = messagechunks[3];
-                    master = true;
-                    if (!keys.Contains("master" + activity))
+                    //!FarmCheckpoint [activity shorthand (!activities)] [(optional)master] [(optional)feats:feat1name,feat2name,etc...] [single word name for the checkpoint of your choosing. a-z, 1-9 only] BungieUsername#0000
+                    if (messagechunks.Length < 4)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help FarmCheckpoint\" to learn how to use this command.");
+                        client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!FarmCheckpoint\" command.\nTry \"!help FarmCheckpoint\" to learn how to use it.");
                         checkpointfarmmode = false;
 
                         statusheader = "Idle...";
@@ -2890,23 +3001,50 @@ namespace TnTCheckpoint
                         UpdateStatusBar("Idle...", UserStatusType.Online);
                         return;
                     }
-                    else
+
+                    string[] nameID = messagechunks.Last().Split("#");
+                    if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
                     {
-                        activitykey = "master" + activity;
+                        client.Rest.SendMessageAsync(message.ChannelId, "For the \"!FarmCheckpoint\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help FarmCheckpoint\" to learn how to use it.");
+                        checkpointfarmmode = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
                     }
-                }
 
-                string[] possiblefeats = {"token","phase","battalions","challenges","cutthroat"};
+                    string activity = messagechunks[1].ToUpper();
+                    string activitykey = activity;
 
-                List<string> featlist = new List<string>();
-                bool feats = false;
-                if (!master)
-                {
-                    if (messagechunks[2].ToLower().Split(":")[0] == "feats" & messagechunks[2].ToLower().Split(":").Length > 1)
+                    string[] keys = checkpoints.Keys.ToArray();
+                    if (!keys.Contains(activity))
                     {
-                        if(activitykey != "DP" & activitykey != "EDP" & activitykey != "EQ")
+                        client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help FarmCheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                        checkpointfarmmode = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    bool master = false;
+                    string ckpointname = messagechunks[2];
+
+                    workingdiscordname = message.Author.Username;
+                    if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
+                    int namestartindex = 3;
+
+                    if (messagechunks[2].ToLower() == "master")
+                    {
+                        namestartindex = 4;
+                        ckpointname = messagechunks[3];
+                        master = true;
+                        if (!keys.Contains("master" + activity))
                         {
-                            client.Rest.SendMessageAsync(message.ChannelId, "The activity you've selected does not support feats. Possible activities with feats are: \nDP, EDP, and EQ.");
+                            client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help FarmCheckpoint\" to learn how to use this command.");
                             checkpointfarmmode = false;
 
                             statusheader = "Idle...";
@@ -2915,16 +3053,23 @@ namespace TnTCheckpoint
                             UpdateStatusBar("Idle...", UserStatusType.Online);
                             return;
                         }
-                        feats = true;
-                        namestartindex = 4;
-                        ckpointname = messagechunks[3];
-
-
-                        foreach (string feat in messagechunks[2].Split(":")[1].Split(","))
+                        else
                         {
-                            if (!possiblefeats.Contains(feat.ToLower()))
+                            activitykey = "master" + activity;
+                        }
+                    }
+
+                    string[] possiblefeats = {"token","phase","battalions","challenges","cutthroat"};
+
+                    List<string> featlist = new List<string>();
+                    bool feats = false;
+                    if (!master)
+                    {
+                        if (messagechunks[2].ToLower().Split(":")[0] == "feats" & messagechunks[2].ToLower().Split(":").Length > 1)
+                        {
+                            if(activitykey != "DP" & activitykey != "EDP" & activitykey != "EQ")
                             {
-                                client.Rest.SendMessageAsync(message.ChannelId, "One or more of the feats you requested aren't in my system. Legal feats include: \nToken, Phase, Battalions, Challenges, and Cutthroat.");
+                                client.Rest.SendMessageAsync(message.ChannelId, "The activity you've selected does not support feats. Possible activities with feats are: \nDP, EDP, and EQ.");
                                 checkpointfarmmode = false;
 
                                 statusheader = "Idle...";
@@ -2933,170 +3078,206 @@ namespace TnTCheckpoint
                                 UpdateStatusBar("Idle...", UserStatusType.Online);
                                 return;
                             }
-                            else
+                            feats = true;
+                            namestartindex = 4;
+                            ckpointname = messagechunks[3];
+
+
+                            foreach (string feat in messagechunks[2].Split(":")[1].Split(","))
                             {
-                                featlist.Add(feat.ToLower());
+                                if (!possiblefeats.Contains(feat.ToLower()))
+                                {
+                                    client.Rest.SendMessageAsync(message.ChannelId, "One or more of the feats you requested aren't in my system. Legal feats include: \nToken, Phase, Battalions, Challenges, and Cutthroat.");
+                                    checkpointfarmmode = false;
+
+                                    statusheader = "Idle...";
+                                    statussubtext = "";
+                                    UpdateTextDisplay();
+                                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                                    return;
+                                }
+                                else
+                                {
+                                    featlist.Add(feat.ToLower());
+                                }
                             }
                         }
                     }
-                }
 
-                workingusername = "";
-                for (int i = namestartindex; i < messagechunks.Length; i++)
-                {
-                    if (workingusername == "") workingusername = workingusername + messagechunks[i];
-                    else workingusername = workingusername + " " + messagechunks[i];
-                }
-
-                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-                ckpointname = rgx.Replace(ckpointname, "");
-
-                int charslot = 0;
-                if (checkpoints[activitykey].Keys.Contains(ckpointname))
-                {
-                    charslot = checkpoints[activitykey][ckpointname];
-                }
-                else
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help transfercheckpoint\" to learn how to use this command, or \"!listcheckpoints\" to see what checkpoints I have.");
-                    checkpointfarmmode = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-
-                client.Rest.SendMessageAsync(message.ChannelId, "Preparing farm :3");
-
-                while (checkpointfarmmode)
-                {
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    SelectChar(charslot);
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    SelectDirector();
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    SelectPortal();
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    SelectActivity(activity);
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    if (master) SelectMaster();
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    if (activitykey == "DP" || activitykey == "EDP" || activitykey == "EQ") ClearFeats();
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-                    if (feats) SelectFeats(featlist);
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-
-                    InvitePlayer("/invite " + workingusername);
-
-                    statussubtext = "Invite sent. Waiting for player to join.";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("!FarmCheckpoint... Invite sent to " + workingusername + "... Awaiting their arrival.", UserStatusType.Idle);
-
-                    Point pointcheck = ConvertAspectRatioCoords(95.859, 83.75);
-                    Point pointclick = ConvertAspectRatioCoords(75.117, 83.75);
-
-                    SetCursorPos(pointclick.X, pointclick.Y);
-
-                    Task.Delay(1000, OrbitToken).Wait();
-                    if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
-
-                    Color spotcolor = GetColorAt(pointcheck);
-
-                    bool change = false;
-
-                    DateTime time = DateTime.Now.AddMinutes(55);
-                    statussubtext = "Comparing red values to see launch button go red.";
-                    UpdateTextDisplay();
-
-                    while (!change)
+                    workingusername = "";
+                    for (int i = namestartindex; i < messagechunks.Length; i++)
                     {
-                        Color spotcolor2 = GetColorAt(pointcheck);
-
-                        if (Math.Abs(spotcolor.G - spotcolor2.G) > 80)
-                        {
-                            if (spotcolor2.G != 0) change = true;
-                        }
-
-                        if (DateTime.Now > time || OrbitToken.IsCancellationRequested)
-                        {
-                            client.Rest.SendMessageAsync(message.ChannelId, "Nobody joined. Returning to orbit.");
-
-                            transferingcheckpoint = false;
-
-                            for(int i = 0; i < 4; i++)
-                            {
-                                _controller.SetButtonState(Xbox360Button.B, true);
-                                Task.Delay(101, OrbitToken).Wait();
-                                _controller.SetButtonState(Xbox360Button.B, false);
-                                Task.Delay(101, OrbitToken).Wait();
-                            }
-
-                            ReturnToCharSelectFast();
-
-                            UpdateStatusBar("Idle...", UserStatusType.Online);
-                            return;
-                        }
-                        Task.Delay(101, OrbitToken).Wait();
+                        if (workingusername == "") workingusername = workingusername + messagechunks[i];
+                        else workingusername = workingusername + " " + messagechunks[i];
                     }
 
-                    statussubtext = "Button went red. Waiting for it to go back.";
-                    UpdateTextDisplay();
+                    Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                    ckpointname = rgx.Replace(ckpointname, "");
 
-                    UpdateStatusBar("!FarmCheckpoint... Join detected, launching momentarily.", UserStatusType.Idle);
-
-                    client.Rest.SendMessageAsync(message.ChannelId, "Launching activity as soon as it lets me...");
-
-                    AwaitColorChange(95.859, 83.75, 1);
-
-                    statussubtext = "Join detected. Launching activity.";
-                    UpdateTextDisplay();
-
-                    Task.Delay(2000, OrbitToken).Wait();
-                    change = false;
-
-                    while (!change)
+                    int charslot = 0;
+                    if (checkpoints[activitykey].Keys.Contains(ckpointname))
                     {
+                        charslot = checkpoints[activitykey][ckpointname];
+                    }
+                    else
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help transfercheckpoint\" to learn how to use this command, or \"!listcheckpoints\" to see what checkpoints I have.");
+                        checkpointfarmmode = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "Preparing farm :3");
+
+                    while (checkpointfarmmode)
+                    {
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        SelectChar(charslot);
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        SelectDirector();
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        SelectPortal();
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        SelectActivity(activity);
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        if (master) SelectMaster();
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        if (activitykey == "DP" || activitykey == "EDP" || activitykey == "EQ") ClearFeats();
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+                        if (feats) SelectFeats(featlist);
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+
+                        InvitePlayer("/invite " + workingusername);
+
+                        statussubtext = "Invite sent. Waiting for player to join.";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("!FarmCheckpoint... Invite sent to " + workingusername + "... Awaiting their arrival.", UserStatusType.Idle);
+
+                        Point pointcheck = ConvertAspectRatioCoords(95.859, 83.75);
+                        Point pointclick = ConvertAspectRatioCoords(75.117, 83.75);
+
+                        SetCursorPos(pointclick.X, pointclick.Y);
+
+                        Task.Delay(1000, OrbitToken).Wait();
+                        if (!checkpointfarmmode || OrbitToken.IsCancellationRequested) break;
+
+                        Color spotcolor = GetColorAt(pointcheck);
+
+                        bool change = false;
+
+                        DateTime time = DateTime.Now.AddMinutes(55);
+                        statussubtext = "Comparing red values to see launch button go red.";
+                        UpdateTextDisplay();
+
+                        while (!change)
+                        {
+                            Color spotcolor2 = GetColorAt(pointcheck);
+
+                            if (Math.Abs(spotcolor.G - spotcolor2.G) > 80)
+                            {
+                                if (spotcolor2.G != 0) change = true;
+                            }
+
+                            if (DateTime.Now > time || OrbitToken.IsCancellationRequested)
+                            {
+                                client.Rest.SendMessageAsync(message.ChannelId, "Nobody joined. Returning to orbit.");
+
+                                transferingcheckpoint = false;
+
+                                for(int i = 0; i < 4; i++)
+                                {
+                                    _controller.SetButtonState(Xbox360Button.B, true);
+                                    Task.Delay(101, OrbitToken).Wait();
+                                    _controller.SetButtonState(Xbox360Button.B, false);
+                                    Task.Delay(101, OrbitToken).Wait();
+                                }
+
+                                ReturnToCharSelectFast();
+
+                                UpdateStatusBar("Idle...", UserStatusType.Online);
+                                return;
+                            }
+                            Task.Delay(101, OrbitToken).Wait();
+                        }
+
+                        statussubtext = "Button went red. Waiting for it to go back.";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("!FarmCheckpoint... Join detected, launching momentarily.", UserStatusType.Idle);
+
+                        client.Rest.SendMessageAsync(message.ChannelId, "Launching activity as soon as it lets me...");
+
+                        AwaitColorChange(95.859, 83.75, 1);
+
+                        statussubtext = "Join detected. Launching activity.";
+                        UpdateTextDisplay();
+
+                        Task.Delay(2000, OrbitToken).Wait();
+                        change = false;
+
+                        while (!change)
+                        {
+                            if (checkpointfarmmode == false) return;
+
+                            Color spotcolor2 = GetColorAt(pointcheck);
+
+                            if (Math.Abs(spotcolor.G - spotcolor2.G) > 60)
+                            {
+                                if (spotcolor2.G != 0) change = true;
+                            }
+
+                            SendClick(pointclick);
+
+                            if (forceorbit) return;
+                            Task.Delay(250, OrbitToken).Wait();
+                        }
+
                         if (checkpointfarmmode == false) return;
 
-                        Color spotcolor2 = GetColorAt(pointcheck);
+                        statussubtext = "Awaiting first black screen.";
+                        UpdateTextDisplay();
 
-                        if (Math.Abs(spotcolor.G - spotcolor2.G) > 60)
+                        DateTime bailout = DateTime.Now.AddSeconds(15);
+
+                        while (!CheckBlackScreen())
                         {
-                            if (spotcolor2.G != 0) change = true;
+                            if (forceorbit) return;
+
+                            if (DateTime.Now > bailout) break;
+                            Task.Delay(30).Wait();
                         }
 
-                        SendClick(pointclick);
+                        UpdateStatusBar("!FarmCheckpoint... Returning to orbit to prep again.", UserStatusType.Idle);
 
-                        if (OrbitToken.IsCancellationRequested) return;
-                        Task.Delay(250, OrbitToken).Wait();
+                        client.Rest.SendMessageAsync(message.ChannelId, "Returning to orbit to begin the cycle again.");
+
+                        ReturnToCharSelectFast();
                     }
-
-                    if (checkpointfarmmode == false) return;
-
-                    statussubtext = "Awaiting first black screen.";
-                    UpdateTextDisplay();
-
-                    DateTime bailout = DateTime.Now.AddSeconds(15);
-
-                    while (!CheckBlackScreen())
-                    {
-                        if (OrbitToken.IsCancellationRequested) return;
-
-                        if (DateTime.Now > bailout) break;
-                    }
-
-                    UpdateStatusBar("!FarmCheckpoint... Returning to orbit to prep again.", UserStatusType.Idle);
-
-                    client.Rest.SendMessageAsync(message.ChannelId, "Returning to orbit to begin the cycle again.");
-
                     ReturnToCharSelectFast();
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
                 }
-                ReturnToCharSelectFast();
-                UpdateStatusBar("Idle...", UserStatusType.Online);
+                catch (ThreadInterruptedException)
+                {
 
+                }
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (checkpointfarmmode)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
+                }
             }).Start();
         }
 
@@ -3275,109 +3456,69 @@ namespace TnTCheckpoint
 
         private static async void CommandDeleteCheckpoint(Message message) 
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                while (afkcycle)
+                try
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
-                }
+                    while (afkcycle)
+                    {
+                        if (forceorbit) return;
+                    }
 
-                if (!oncharselect)
-                {
-                    if (transferingcheckpoint)
+                    if (!oncharselect)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        if (transferingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (holdingload)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (checkpointfarmmode)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (grabbingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (deletingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (cleaningcheckpoints)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                         return;
                     }
-                    if (holdingload)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (checkpointfarmmode)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (grabbingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (deletingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (cleaningcheckpoints)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
-                    return;
-                }
                 
-                statusheader = "!DeleteCheckpoint command:";
-                statussubtext = "Making sure the command is viable";
-                UpdateTextDisplay();
-
-                UpdateStatusBar("!DeleteCheckpoint... Validating command.", UserStatusType.Idle);
-
-                deletingcheckpoint = true;
-                client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
-
-                //parse command text
-
-                string[] messagechunks = message.Content.Split(" ");
-
-                if (messagechunks.Length < 3)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!DeleteCheckpoint\" command.\nTry \"!help DeleteCheckpoint\" to learn how to use it.");
-                    deletingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
+                    statusheader = "!DeleteCheckpoint command:";
+                    statussubtext = "Making sure the command is viable";
                     UpdateTextDisplay();
 
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
+                    UpdateStatusBar("!DeleteCheckpoint... Validating command.", UserStatusType.Idle);
 
-                string activity = messagechunks[1].ToUpper();
-                string activitykey = activity;
+                    deletingcheckpoint = true;
+                    client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
 
-                string[] keys = checkpoints.Keys.ToArray();
-                if (!keys.Contains(activity))
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help DeleteCheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
-                    deletingcheckpoint = false;
+                    //parse command text
 
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
+                    string[] messagechunks = message.Content.Split(" ");
 
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-
-                bool master = false;
-                string ckpointname = messagechunks[2];
-
-                workingdiscordname = message.Author.Username;
-                if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
-                int namestartindex = 3;
-
-                if (messagechunks[2].ToLower() == "master")
-                {
-                    namestartindex = 4;
-                    checkpointname = messagechunks[3];
-                    master = true;
-                    if (!keys.Contains("master" + activity))
+                    if (messagechunks.Length < 3)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help DeleteCheckpoint\" to learn how to use this command.");
+                        client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!DeleteCheckpoint\" command.\nTry \"!help DeleteCheckpoint\" to learn how to use it.");
                         deletingcheckpoint = false;
 
                         statusheader = "Idle...";
@@ -3387,64 +3528,123 @@ namespace TnTCheckpoint
                         UpdateStatusBar("Idle...", UserStatusType.Online);
                         return;
                     }
+
+                    string activity = messagechunks[1].ToUpper();
+                    string activitykey = activity;
+
+                    string[] keys = checkpoints.Keys.ToArray();
+                    if (!keys.Contains(activity))
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help DeleteCheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                        deletingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+
+                    bool master = false;
+                    string ckpointname = messagechunks[2];
+
+                    workingdiscordname = message.Author.Username;
+                    if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
+                    int namestartindex = 3;
+
+                    if (messagechunks[2].ToLower() == "master")
+                    {
+                        namestartindex = 4;
+                        checkpointname = messagechunks[3];
+                        master = true;
+                        if (!keys.Contains("master" + activity))
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help DeleteCheckpoint\" to learn how to use this command.");
+                            deletingcheckpoint = false;
+
+                            statusheader = "Idle...";
+                            statussubtext = "";
+                            UpdateTextDisplay();
+
+                            UpdateStatusBar("Idle...", UserStatusType.Online);
+                            return;
+                        }
+                        else
+                        {
+                            activitykey = "master" + activity;
+                            ckpointname = messagechunks[3];
+                        }
+                    }
+
+                    Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                    ckpointname = rgx.Replace(ckpointname, "");
+
+                    int charslot = 0;
+                    if (checkpoints[activitykey].Keys.Contains(ckpointname))
+                    {
+                        charslot = checkpoints[activitykey][ckpointname];
+                    }
                     else
                     {
-                        activitykey = "master" + activity;
-                        ckpointname = messagechunks[3];
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help DeleteCheckpoint\" to learn how to use this command, or \"!listcheckpoints\" to see what checkpoints I have.");
+                        deletingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
                     }
-                }
 
-                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-                ckpointname = rgx.Replace(ckpointname, "");
+                    UpdateStatusBar("!DeleteCheckpoint... Navigating to activity.", UserStatusType.Idle);
 
-                int charslot = 0;
-                if (checkpoints[activitykey].Keys.Contains(ckpointname))
-                {
-                    charslot = checkpoints[activitykey][ckpointname];
-                }
-                else
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help DeleteCheckpoint\" to learn how to use this command, or \"!listcheckpoints\" to see what checkpoints I have.");
-                    deletingcheckpoint = false;
+                    client.Rest.SendMessageAsync(message.ChannelId, "Command acknowledged, navigating to the activity to delete the checkpoint.");
 
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
+                    SelectChar(charslot);
+                    SelectDirector();
+                    SelectPortal();
+                    SelectActivity(activity);
+                    if (master) SelectMaster();
+
+                    UpdateStatusBar("!DeleteCheckpoint... Removing checkpoint.", UserStatusType.Idle);
+                    removecheckpoint();
+
+                    checkpoints[activitykey].Remove(ckpointname);
+                    savecheckpoints();
+
+                    UpdateStatusBar("!DeleteCheckpoint... Returning to character select...", UserStatusType.Idle);
+                    client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint deleted, I'm returning to orbit now.");
+
+                    ReturnToCharSelectFast();
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "Idling...");
 
                     UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
                 }
+                catch (ThreadInterruptedException)
+                {
 
-                UpdateStatusBar("!DeleteCheckpoint... Navigating to activity.", UserStatusType.Idle);
+                }
+            });
+            thread.Start();
 
-                client.Rest.SendMessageAsync(message.ChannelId, "Command acknowledged, navigating to the activity to delete the checkpoint.");
-
-                SelectChar(charslot);
-                SelectDirector();
-                SelectPortal();
-                SelectActivity(activity);
-                if (master) SelectMaster();
-
-                UpdateStatusBar("!DeleteCheckpoint... Removing checkpoint.", UserStatusType.Idle);
-                removecheckpoint();
-
-                checkpoints[activitykey].Remove(ckpointname);
-                savecheckpoints();
-
-                UpdateStatusBar("!DeleteCheckpoint... Returning to character select...", UserStatusType.Idle);
-                client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint deleted, I'm returning to orbit now.");
-
-                ReturnToCharSelectFast();
-
-                client.Rest.SendMessageAsync(message.ChannelId, "Idling...");
-
-                UpdateStatusBar("Idle...", UserStatusType.Online);
-
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (deletingcheckpoint)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
+                }
             }).Start();
 
-                //check to see if the checkpoint exists. if it does, ask for confirmation. if not, make sure the user typed it correctly.
-                //also make sure im not already waiting for confirmation somewhere.
-                //if confirmed, delete checkpoint.
+            //check to see if the checkpoint exists. if it does, ask for confirmation. if not, make sure the user typed it correctly.
+            //also make sure im not already waiting for confirmation somewhere.
+            //if confirmed, delete checkpoint.
         }
 
         private static async void CommandEndHoldCheckpoint(Message message) 
@@ -3464,7 +3664,7 @@ namespace TnTCheckpoint
                 statussubtext = "Awaiting first verification.";
                 UpdateTextDisplay();
 
-                client.Rest.SendMessageAsync(message.ChannelId, "Are you sure you're done holding the load? If you're doing this to a load someone else is holding please make sure they're done.\nSend \"!verify\" to confirm. If no message is sent in 60 seconds I'll go back to idleing.");
+                client.Rest.SendMessageAsync(message.ChannelId, "Are you sure you're done holding the load? If you're doing this to a load someone else is holding please make sure they're done.\nSend \"!verify\" to confirm or \"!cancel\" to cancel. If no message is sent in 60 seconds I'll go back to idleing.");
 
                 DateTime timeout = DateTime.Now.AddMinutes(1);
                 while (verifylevel == 0)
@@ -3486,15 +3686,17 @@ namespace TnTCheckpoint
             }).Start();
         }
 
-        private static async void CommandHoldCheckpoint(Message message) 
+        private static async void CommandHoldLoad(Message message) 
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
+                try
+                {
                 while (afkcycle)
                 {
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                 }
 
                 if (!oncharselect)
@@ -3616,18 +3818,18 @@ namespace TnTCheckpoint
                     client.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!endhold\" when you want me to stop.");
 
                     Task.Delay(10000, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     //navigate to collections
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
                     //start, lb, lb, click lore tab
                     _controller.SetButtonState(Xbox360Button.Start, true);
@@ -3635,7 +3837,7 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.Start, false);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(1000, OrbitToken).Wait();
 
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
@@ -3643,31 +3845,31 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
                     Task.Delay(400, OrbitToken).Wait();
                     _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(1000, OrbitToken).Wait();
 
                     SendClick(new Point(0, 0));
                     Task.Delay(1000, OrbitToken).Wait();
                     SetCursorPos(ConvertAspectRatioCoords(68.395375, 60).X, ConvertAspectRatioCoords(68.395375, 60).Y);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(1000, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
 
                     _controller.SetButtonState(Xbox360Button.A, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.A, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     while (holdingload)
@@ -3675,174 +3877,254 @@ namespace TnTCheckpoint
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
                         Task.Delay(101, OrbitToken).Wait();
                         _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
-                        if (OrbitToken.IsCancellationRequested) return;
+                        if (forceorbit) return;
                         Task.Delay(3000, OrbitToken).Wait();
-                        if (OrbitToken.IsCancellationRequested) return;
+                        if (forceorbit) return;
                         if (!holdingload) break;
 
                         _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                         Task.Delay(101, OrbitToken).Wait();
                         _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                        if (OrbitToken.IsCancellationRequested) return;
+                        if (forceorbit) return;
                         Task.Delay(3000, OrbitToken).Wait();
-                        if (OrbitToken.IsCancellationRequested) return;
+                        if (forceorbit) return;
+                        if (!holdingload) break;
 
-                        InvitePlayer(workingusername);
+                        SendClick(new Point(50, 50));
+
+                        InvitePlayer("/invite " + workingusername);
+                        Task.Delay(1000,OrbitToken).Wait();
+                        if (!holdingload) break;
+                        if (forceorbit) return;
+
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
+                        Task.Delay(10000, OrbitToken).Wait();
                     }
 
+                    client.Rest.SendMessageAsync(message.ChannelId, "Endhold command processed. Returning to orbit...");
+
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
                     _controller.SetButtonState(Xbox360Button.B, false);
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     Task.Delay(101, OrbitToken).Wait();
 
                     ReturnToCharSelectFast();
 
+                    client.Rest.SendMessageAsync(message.ChannelId, "Idling...");
+
                     UpdateStatusBar("Idle...", UserStatusType.Online);
+                    }
+
+                }
+                catch (ThreadInterruptedException)
+                {
+
+                }
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (holdingload)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
                 }
             }).Start();
         }
 
         private static async void CommandGrabCheckpoint(Message message)
         {
-            new Thread(() =>
+            Thread thread = new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                //make sure reset hasnt happened yet.
-                if (checkreset())
+                try
                 {
-                    initializing = true;
-                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
-                    InitializeCheckpoints();
-                    GetToDirectorForActivityCoords();
-                    CleanCheckpoints();
-                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
-
-                    initializing = false;
-                    return;
-                }
-
-                while (afkcycle)
-                {
-                    if (OrbitToken.IsCancellationRequested) return;
-                }
-
-                if (!oncharselect)
-                {
-                    if (transferingcheckpoint)
+                    //make sure reset hasnt happened yet.
+                    if (checkreset())
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        initializing = true;
+                        client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
+                        InitializeCheckpoints();
+                        GetToDirectorForActivityCoords();
+                        CleanCheckpoints();
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
+
+                        initializing = false;
                         return;
                     }
-                    if (holdingload)
+
+                    while (afkcycle)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        if (forceorbit) return;
+                    }
+
+                    if (!oncharselect)
+                    {
+                        if (transferingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (holdingload)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (checkpointfarmmode)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                            return;
+                        }
+                        if (grabbingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (deletingcheckpoint)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        if (cleaningcheckpoints)
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                            return;
+                        }
+                        client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
                         return;
                     }
-                    if (checkpointfarmmode)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
-                        return;
-                    }
-                    if (grabbingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (deletingcheckpoint)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    if (cleaningcheckpoints)
-                    {
-                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                        return;
-                    }
-                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
-                    return;
-                }
 
-                statusheader = "!GrabCheckpoint command:";
-                statussubtext = "Making sure the command is viable";
-                UpdateTextDisplay();
-
-                UpdateStatusBar("!GrabCheckpoint... Validating command.", UserStatusType.Idle);
-
-                grabbingcheckpoint = true;
-
-                //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
-                string[] messagechunks = message.Content.Split(" ");
-                //!GrabCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000
-                if (messagechunks.Length < 4)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!grabcheckpoint\" command.\nTry \"!help grabcheckpoint\" to learn how to use it.");
-                    grabbingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
+                    statusheader = "!GrabCheckpoint command:";
+                    statussubtext = "Making sure the command is viable";
                     UpdateTextDisplay();
 
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
+                    UpdateStatusBar("!GrabCheckpoint... Validating command.", UserStatusType.Idle);
 
-                string[] nameID = messagechunks.Last().Split("#");
-                if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!grabcheckpoint\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help grabcheckpoint\" to learn how to use it.");
-                    grabbingcheckpoint = false;
+                    grabbingcheckpoint = true;
 
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-
-                string activity = messagechunks[1].ToUpper();
-                string activitykey = activity;
-
-                string[] keys = checkpoints.Keys.ToArray();
-                if (!keys.Contains(activity))
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help grabcheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
-                    grabbingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-                bool master = false;
-                string ckpointname = messagechunks[2];
-
-                workingdiscordname = message.Author.Username;
-                if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
-                int namestartindex = 3;
-
-                if (messagechunks[2].ToLower() == "master")
-                {
-                    namestartindex = 4;
-                    ckpointname = messagechunks[3];
-                    master = true;
-                    if (!keys.Contains("master" + activity))
+                    //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
+                    string[] messagechunks = message.Content.Split(" ");
+                    //!GrabCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000
+                    if (messagechunks.Length < 4)
                     {
-                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
+                        client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!grabcheckpoint\" command.\nTry \"!help grabcheckpoint\" to learn how to use it.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+
+                    string[] nameID = messagechunks.Last().Split("#");
+                    if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "For the \"!grabcheckpoint\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help grabcheckpoint\" to learn how to use it.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+
+                    string activity = messagechunks[1].ToUpper();
+                    string activitykey = activity;
+
+                    string[] keys = checkpoints.Keys.ToArray();
+                    if (!keys.Contains(activity))
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help grabcheckpoint\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    bool master = false;
+                    string ckpointname = messagechunks[2];
+
+                    workingdiscordname = message.Author.Username;
+                    if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
+                    int namestartindex = 3;
+
+                    if (messagechunks[2].ToLower() == "master")
+                    {
+                        namestartindex = 4;
+                        ckpointname = messagechunks[3];
+                        master = true;
+                        if (!keys.Contains("master" + activity))
+                        {
+                            client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
+                            grabbingcheckpoint = false;
+
+                            statusheader = "Idle...";
+                            statussubtext = "";
+                            UpdateTextDisplay();
+
+                            UpdateStatusBar("Idle...", UserStatusType.Online);
+                            return;
+                        }
+                        else
+                        {
+                            activitykey = "master" + activity;
+                        }
+                    }
+
+                    workingusername = "";
+                    for (int i = namestartindex; i < messagechunks.Length; i++)
+                    {
+                        if (workingusername == "") workingusername = workingusername + messagechunks[i];
+                        else workingusername = workingusername + " " + messagechunks[i];
+                    }
+
+                    Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                    ckpointname = rgx.Replace(ckpointname, "");
+
+                    int charslot = 0;
+                    if (checkpoints[activitykey].Keys.Contains(ckpointname))
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I already have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    if (checkpoints[activitykey].Keys.Count == 3)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I already have 3 checkpoints for that activity in my record.\nTry \"!help deletecheckpoint\" to learn how to delete a checkpoint so that you may overwrite it, and \"!listcheckpoints\" to see what checkpoints I have.");
                         grabbingcheckpoint = false;
 
                         statusheader = "Idle...";
@@ -3854,137 +4136,113 @@ namespace TnTCheckpoint
                     }
                     else
                     {
-                        activitykey = "master" + activity;
+                        charslot = 1;
+                        //charslot = checkpoints[activitykey].Count + 1;
+                        foreach (string tk in checkpoints[activitykey].Keys)
+                        {
+                            if (checkpoints[activitykey][tk] == 1) charslot = 2;
+                            if (checkpoints[activitykey][tk] == 2) charslot = 3;
+                        }
                     }
-                }
 
-                workingusername = "";
-                for (int i = namestartindex; i < messagechunks.Length; i++)
-                {
-                    if (workingusername == "") workingusername = workingusername + messagechunks[i];
-                    else workingusername = workingusername + " " + messagechunks[i];
-                }
-
-                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
-                ckpointname = rgx.Replace(ckpointname, "");
-
-                int charslot = 0;
-                if (checkpoints[activitykey].Keys.Contains(ckpointname))
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I already have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
-                    grabbingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-                if (checkpoints[activitykey].Keys.Count == 3)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "I already have 3 checkpoints for that activity in my record.\nTry \"!help deletecheckpoint\" to learn how to delete a checkpoint so that you may overwrite it, and \"!listcheckpoints\" to see what checkpoints I have.");
-                    grabbingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-                else
-                {
-                    charslot = 1;
-                    //charslot = checkpoints[activitykey].Count + 1;
-                    foreach (string tk in checkpoints[activitykey].Keys)
+                    if (ckpointname == "")
                     {
-                        if (checkpoints[activitykey][tk] == 1) charslot = 2;
-                        if (checkpoints[activitykey][tk] == 2) charslot = 3;
+                        client.Rest.SendMessageAsync(message.ChannelId, "Somehow you've managed to give me a checkpoint name that when filtered for only numbers and letters is an empty string.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
                     }
-                }
 
-                if (ckpointname == "")
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Somehow you've managed to give me a checkpoint name that when filtered for only numbers and letters is an empty string.\nTry \"!help grabcheckpoint\" to learn how to use this command.");
-                    grabbingcheckpoint = false;
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                    return;
-                }
-
-                //activity for the activity name (shorthand + master)
-                //charslot for which character the checkpoint is stored on.
-                //master (bool) to know if its master mode or not
-
-                statusheader = "!GrabCheckpoint command:";
-                statussubtext = "Attempting to join...";
-                UpdateTextDisplay();
-
-                UpdateStatusBar("!GrabCheckpoint... Attempting to join " + workingusername + ".", UserStatusType.Idle);
-
-                client.Rest.SendMessageAsync(message.ChannelId, "Attempting to join...");
-                SelectChar(charslot);
-                bool worked = JoinFireteamFromOrbit("/join " + workingusername, activity);
-                if (!worked)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
-                    grabbingcheckpoint = false;
-                    ReturnToCharSelectFast();
-
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
-
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
-                }
-                else
-                {
-                    //make sure its not an error code please TODO - not sure how to synthesize an error code here honestly.
-
-                    //wait for wipe and then return to orbit
-
-                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now pretty sure I'm boots on ground. Wipe when ready.");
+                    //activity for the activity name (shorthand + master)
+                    //charslot for which character the checkpoint is stored on.
+                    //master (bool) to know if its master mode or not
 
                     statusheader = "!GrabCheckpoint command:";
-                    statussubtext = "Boots on ground. Awaiting wipe screen.";
+                    statussubtext = "Attempting to join...";
                     UpdateTextDisplay();
 
-                    UpdateStatusBar("!GrabCheckpoint... Awaiting wipe :3", UserStatusType.Idle);
+                    UpdateStatusBar("!GrabCheckpoint... Attempting to join " + workingusername + ".", UserStatusType.Idle);
 
-                    awaittext("lightfadesaway", ConvertAspectRatioCoords(30.98958333333, 9.25925925925926), ConvertAspectRatioCoords(66.927083333, 15.55555555555));
+                    client.Rest.SendMessageAsync(message.ChannelId, "Attempting to join...");
+                    SelectChar(charslot);
+                    bool worked = JoinFireteamFromOrbit("/join " + workingusername, activity);
+                    if (!worked)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
+                        grabbingcheckpoint = false;
+                        ReturnToCharSelectFast();
 
-                    statusheader = "!GrabCheckpoint command:";
-                    statussubtext = "Wipe screen found. Waiting for wipe screen to clear.";
-                    UpdateTextDisplay();
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
 
-                    client.Rest.SendMessageAsync(message.ChannelId, "Wipe detected. As soon as the wipe screen closes I'll return to orbit.");
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                    }
+                    else
+                    {
+                        //make sure its not an error code please TODO - not sure how to synthesize an error code here honestly.
 
-                    AwaitColorChange(50, 50, 2);
+                        //wait for wipe and then return to orbit
 
-                    if (!master) client.Rest.SendMessageAsync(message.ChannelId, "Wipe detected. Checkpoint " + ckpointname + " grabbed for " + activity + " from " + workingusername + ".\n Returning to orbit to idle.");
-                    else client.Rest.SendMessageAsync(message.ChannelId, "Wipe detected. Checkpoint " + ckpointname + " grabbed for master " + activity + " from " + workingusername + ".\n Returning to orbit to idle.");
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm now pretty sure I'm boots on ground. Wipe when ready.");
 
-                    checkpoints[activitykey].Add(ckpointname,charslot);
-                    savecheckpoints();
+                        statusheader = "!GrabCheckpoint command:";
+                        statussubtext = "Boots on ground. Awaiting wipe screen.";
+                        UpdateTextDisplay();
 
-                    grabbingcheckpoint = false;
-                    bootsonground = false;
+                        UpdateStatusBar("!GrabCheckpoint... Awaiting wipe :3", UserStatusType.Idle);
 
-                    UpdateStatusBar("!GrabCheckpoint... Returning to orbit.", UserStatusType.Idle);
-                    ReturnToCharSelectFast();
+                        awaittext("lightfadesaway", ConvertAspectRatioCoords(30.98958333333, 9.25925925925926), ConvertAspectRatioCoords(66.927083333, 15.55555555555));
 
-                    client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint grabbed, returning to idling now...");
+                        statusheader = "!GrabCheckpoint command:";
+                        statussubtext = "Wipe screen found. Waiting for wipe screen to clear.";
+                        UpdateTextDisplay();
 
-                    statusheader = "Idle...";
-                    statussubtext = "";
-                    UpdateTextDisplay();
+                        client.Rest.SendMessageAsync(message.ChannelId, "Wipe detected. As soon as the wipe screen closes I'll return to orbit.");
 
-                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                        AwaitColorChange(50, 50, 2);
+
+                        if (!master) client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint " + ckpointname + " grabbed for " + activity + " from " + workingusername + ".\n Returning to orbit to idle.");
+                        else client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint " + ckpointname + " grabbed for master " + activity + " from " + workingusername + ".\n Returning to orbit to idle.");
+
+                        checkpoints[activitykey].Add(ckpointname,charslot);
+                        savecheckpoints();
+
+                        grabbingcheckpoint = false;
+                        bootsonground = false;
+
+                        UpdateStatusBar("!GrabCheckpoint... Returning to orbit.", UserStatusType.Idle);
+                        ReturnToCharSelectFast();
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                    }
+
+                }
+                catch (ThreadInterruptedException)
+                {
+
+                }
+            });
+            thread.Start();
+
+            new Thread(() =>
+            {
+                Task.Delay(2000).Wait();
+                while (grabbingcheckpoint)
+                {
+                    if (forceorbit)
+                    {
+                        thread.Interrupt();
+                    }
                 }
             }).Start();
         }
@@ -4059,200 +4317,219 @@ namespace TnTCheckpoint
         #region macros
         public static void ReturnToCharSelectForceful()
         {
-            statussubtext = "Return to orbit: Making sure I'm taking controller input.";
-            UpdateTextDisplay();
-
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-
-            int iconwidth = (int)Math.Round(width * 0.071484);
-            int iconheight = (int)Math.Round(height * 0.025695);
-            Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            //make sure im in controller mode
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-
-            statussubtext = "Return to orbit: Double checking I'm not already on character select.";
-            UpdateTextDisplay();
-
-            client.Rest.SendMessageAsync(ChannelID,"Attempting to get back to orbit... depending on what i was doing when this started I may need a few minutes to figure myself out.\n If you REALLY need to fix things, you can use \"!forcerestart\" to kill d2 and the bot, and restart both.");
-
-            int i = 0;
-            while (!CheckCharSelect())
+            try
             {
-                bool threadclosing = false;
+                statussubtext = "Return to orbit: Making sure I'm taking controller input.";
+                UpdateTextDisplay();
 
-                Thread charcheck = new Thread(() =>
+                int width = d2window.Right - d2window.Left;
+                int height = d2window.Bottom - d2window.Top;
+
+                int iconwidth = (int)Math.Round(width * 0.071484);
+                int iconheight = (int)Math.Round(height * 0.025695);
+                Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
+                int xpos = startcoords.X;
+                int ypos = startcoords.Y;
+
+                statussubtext = "Return to orbit: Double checking I'm not already on character select.";
+                UpdateTextDisplay();
+
+                client.Rest.SendMessageAsync(ChannelID, "Attempting to get back to orbit... depending on what i was doing when this started I may need a few minutes to figure myself out.\n If you REALLY need to fix things, you can use \"!forcerestart\" to kill d2 and the bot, and restart both.");
+
+                int i = 0;
+                while (!CheckCharSelect())
                 {
-                    try
+                    Thread.Sleep(1000);
+                    i++;
+                    client.Rest.SendMessageAsync(ChannelID, "Beginning attempt " + i + "...");
+
+                    //make sure im in controller mode
+                    _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightThumb, false);
+
+                    _controller.SetButtonState(Xbox360Button.Start, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.Start, false);
+                    AwaitColorChange(95, 5, 1);
+                    Thread.Sleep(2000);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    AwaitColorChange(95, 10, 1);
+                    Thread.Sleep(300);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    AwaitColorChange(95, 10, 1);
+                    Thread.Sleep(300);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    Thread.Sleep(1000);
+                    _controller.SetButtonState(Xbox360Button.Down, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.Down, false);
+                    Thread.Sleep(400);
+                    _controller.SetButtonState(Xbox360Button.Down, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.Down, false);
+                    Thread.Sleep(400);
+                    _controller.SetButtonState(Xbox360Button.Down, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.Down, false);
+                    Thread.Sleep(400);
+                    _controller.SetButtonState(Xbox360Button.Down, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.Down, false);
+                    Thread.Sleep(1000);
+
+
+                    SendClick(ConvertAspectRatioCoords(84.21, 23.26));
+                    Thread.Sleep(101);
+                    SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
+                    Thread.Sleep(101);
+
+                    for (int j = 0; j < 4; j++)
                     {
-                        i++;
-                        client.Rest.SendMessageAsync(ChannelID, "Beginning attempt " + i + "...");
+                        _controller.SetButtonState(Xbox360Button.A, true);
+                        Thread.Sleep(101);
+                        _controller.SetButtonState(Xbox360Button.A, false);
+                        Thread.Sleep(101);
+                    }
 
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Start, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Start, false);
-                        AwaitColorChange(95, 5, 1);
-                        Thread.Sleep(2000);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                        AwaitColorChange(95, 10, 1);
-                        Thread.Sleep(300);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                        AwaitColorChange(95, 10, 1);
-                        Thread.Sleep(300);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                        Thread.Sleep(1000);
-                        _controller.SetButtonState(Xbox360Button.Down, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Down, false);
-                        Thread.Sleep(400);
-                        _controller.SetButtonState(Xbox360Button.Down, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Down, false);
-                        Thread.Sleep(400);
-                        _controller.SetButtonState(Xbox360Button.Down, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Down, false);
-                        Thread.Sleep(400);
-                        _controller.SetButtonState(Xbox360Button.Down, true);
-                        Thread.Sleep(101);
-                        _controller.SetButtonState(Xbox360Button.Down, false);
-                        Thread.Sleep(1000);
+                    Thread.Sleep(200);
 
+                    bool madeit = false;
 
-                        SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-                        Thread.Sleep(101);
-                        SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
-                        Thread.Sleep(101);
-
-                        for (int i = 0; i < 4; i++)
+                    Thread waitcharsel = new Thread(() =>
+                    {
+                        try
                         {
-                            _controller.SetButtonState(Xbox360Button.A, true);
-                            Thread.Sleep(101);
-                            _controller.SetButtonState(Xbox360Button.A, false);
-                            Thread.Sleep(101);
+                            awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                            madeit = true;
                         }
+                        catch
+                        {
 
-                        Thread.Sleep(200);
-                        awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                        }
+                    }
+                    );
+
+                    waitcharsel.Start();
+
+                    DateTime kill = DateTime.Now.AddSeconds(30);
+
+                    while (DateTime.Now < kill)
+                    {
+                        if (madeit) break;
+                    }
+
+                    if (madeit)
+                    {
                         SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
                         SendClick(ConvertAspectRatioCoords(50, 50));
                         Thread.Sleep(1000);
                     }
-                    catch
+                    else
                     {
-                        _controller.SetButtonState(Xbox360Button.A, false);
-                        _controller.SetButtonState(Xbox360Button.Down, false);
-                        _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                        _controller.SetButtonState(Xbox360Button.Start, false);
-                        _controller.SetButtonState(Xbox360Button.Y, false);
-                        threadclosing = true;
+                        waitcharsel.Interrupt();
                     }
-                });
-                charcheck.Start();
-                DateTime kill = DateTime.Now.AddMinutes(1);
-                
-                while(DateTime.Now < kill) { }
+                }
 
-                charcheck.Interrupt();
+                statusheader = "Idle...";
+                statussubtext = "";
+                UpdateTextDisplay();
 
-                Task.Delay(1000).Wait();
-
-                while (!threadclosing) { };
+                oncharselect = true;
             }
+            catch (ThreadInterruptedException)
+            {
 
-            statusheader = "Idle...";
-            statussubtext = "";
-            UpdateTextDisplay();
-
-            oncharselect = true;
+            }
         }
 
         public static void ReturnToCharSelectFast()
         {
-            statussubtext = "Return to orbit fast: Making sure I'm taking controller input.";
-            UpdateTextDisplay();
-
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-
-            int iconwidth = (int)Math.Round(width * 0.071484);
-            int iconheight = (int)Math.Round(height * 0.025695);
-            Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            //make sure im in controller mode
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Y, false);
-
-            statussubtext = "Return to orbit fast: Doing menuing to get back to character select...";
-            UpdateTextDisplay();
-
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Start, true);
-            Thread.Sleep(101);
-            _controller.SetButtonState(Xbox360Button.Start, false);
-            AwaitColorChange(95, 5, 1);
-            Thread.Sleep(500);
-            SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-            Thread.Sleep(500);
-
-            Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
-            SetCursorPos(selectpos.X,selectpos.Y);
-            Thread.Sleep(101);
-            SendClick(selectpos);
-
-            Thread.Sleep(700);
-
-            selectpos = ConvertAspectRatioCoords(14.8046875, 63.75);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Thread.Sleep(101);
-            SendClick(selectpos);
-
-            Thread.Sleep(700);
-
-            SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
-            Thread.Sleep(101);
-
-            for (int i = 0; i < 4; i++)
+            try
             {
-                _controller.SetButtonState(Xbox360Button.A, true);
+                statussubtext = "Return to orbit fast: Making sure I'm taking controller input.";
+                UpdateTextDisplay();
+
+                int width = d2window.Right - d2window.Left;
+                int height = d2window.Bottom - d2window.Top;
+
+                int iconwidth = (int)Math.Round(width * 0.071484);
+                int iconheight = (int)Math.Round(height * 0.025695);
+                Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
+                int xpos = startcoords.X;
+                int ypos = startcoords.Y;
+
+                //make sure im in controller mode
+                _controller.SetButtonState(Xbox360Button.Y, true);
                 Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.A, false);
+                _controller.SetButtonState(Xbox360Button.Y, false);
                 Thread.Sleep(101);
+                _controller.SetButtonState(Xbox360Button.Y, true);
+                Thread.Sleep(101);
+                _controller.SetButtonState(Xbox360Button.Y, false);
+
+                statussubtext = "Return to orbit fast: Doing menuing to get back to character select...";
+                UpdateTextDisplay();
+
+                Thread.Sleep(101);
+                _controller.SetButtonState(Xbox360Button.Start, true);
+                Thread.Sleep(101);
+                _controller.SetButtonState(Xbox360Button.Start, false);
+                AwaitColorChange(95, 5, 1);
+                Thread.Sleep(500);
+                SendClick(ConvertAspectRatioCoords(84.21, 23.26));
+                Thread.Sleep(500);
+
+                Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Thread.Sleep(101);
+                SendClick(selectpos);
+
+                Thread.Sleep(700);
+
+                selectpos = ConvertAspectRatioCoords(14.8046875, 63.75);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Thread.Sleep(101);
+                SendClick(selectpos);
+
+                Thread.Sleep(700);
+
+                SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
+                Thread.Sleep(101);
+
+                for (int i = 0; i < 4; i++)
+                {
+                    _controller.SetButtonState(Xbox360Button.A, true);
+                    Thread.Sleep(101);
+                    _controller.SetButtonState(Xbox360Button.A, false);
+                    Thread.Sleep(101);
+                }
+
+                Thread.Sleep(200);
+                awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
+                SendClick(ConvertAspectRatioCoords(50, 50));
+                Thread.Sleep(1000);
+                oncharselect = true;
+
+                statusheader = "Idle...";
+                statussubtext = "";
+                UpdateTextDisplay();
             }
+            catch (ThreadInterruptedException)
+            {
 
-            Thread.Sleep(200);
-            awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
-            SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
-            SendClick(ConvertAspectRatioCoords(50, 50));
-            Thread.Sleep(1000);
-            oncharselect = true;
-
-            statusheader = "Idle...";
-            statussubtext = "";
-            UpdateTextDisplay();
+            }
         }
 
         /// <summary>
@@ -4261,21 +4538,27 @@ namespace TnTCheckpoint
         /// <param name="charslot"></param>
         private static async void SelectChar(int charslot)
         {
-            oncharselect = false;
-            int gap = (int)Math.Round((charslot - 1) * 10.278);
+            try
+            {
+                oncharselect = false;
+                int gap = (int)Math.Round((charslot - 1) * 10.278);
 
-            statussubtext = "Selecting character...";
-            UpdateTextDisplay();
+                statussubtext = "Selecting character...";
+                UpdateTextDisplay();
 
-            SetCursorPos(ConvertAspectRatioCoords(60.859, 41.806 + gap).X, ConvertAspectRatioCoords(60.859, 41.806 + gap).Y);
-            SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
-            Task.Delay(101, OrbitToken).Wait();
-            SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
-            Task.Delay(750, OrbitToken).Wait();
-            black = GetColorAt(new Point(50, 50));
-            AwaitColorChange(50, 50, 2);
-            Task.Delay(3000, OrbitToken).Wait();
-            //now in orbit
+                SetCursorPos(ConvertAspectRatioCoords(60.859, 41.806 + gap).X, ConvertAspectRatioCoords(60.859, 41.806 + gap).Y);
+                SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
+                Task.Delay(101, OrbitToken).Wait();
+                SendClick(ConvertAspectRatioCoords(60.859, 41.806 + gap));
+                Task.Delay(750, OrbitToken).Wait();
+                AwaitColorChange(50, 50, 2);
+                Task.Delay(3000, OrbitToken).Wait();
+                //now in orbit
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         /// <summary>
@@ -4283,34 +4566,43 @@ namespace TnTCheckpoint
         /// </summary>
         private static async void SelectDirector()
         {
-            statussubtext = "Getting to director...";
-            UpdateTextDisplay();
+            try
+            {
+                statussubtext = "Getting to director...";
+                UpdateTextDisplay();
 
-            //clear notification for iron banner
-            _controller.SetButtonState(Xbox360Button.RightThumb, true); //this is to make sure im in controller mode
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.RightThumb, false);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.A, true);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.A, false);
-            Task.Delay(101, OrbitToken).Wait();
+                //clear notification for iron banner
+                _controller.SetButtonState(Xbox360Button.RightThumb, true); //this is to make sure im in controller mode
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.A, true);
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.A, false);
+                Task.Delay(101, OrbitToken).Wait();
 
-            //get to director
-            _controller.SetButtonState(Xbox360Button.Back, true);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.Back, false);
-            Task.Delay(101, OrbitToken).Wait();
-            AwaitColorChange(56.52, 87.08, 2);
-            Task.Delay(2500, OrbitToken).Wait();
+                //get to director
+                _controller.SetButtonState(Xbox360Button.Back, true);
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.Back, false);
+                Task.Delay(101, OrbitToken).Wait();
+                AwaitColorChange(56.52, 87.08, 2);
+                Task.Delay(2500, OrbitToken).Wait();
 
-            //double down on clearing notification for iron banner
-            _controller.SetButtonState(Xbox360Button.A, true);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.A, false);
-            Task.Delay(101, OrbitToken).Wait();
+                //double down on clearing notification for iron banner
+                _controller.SetButtonState(Xbox360Button.A, true);
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.A, false);
+                Task.Delay(101, OrbitToken).Wait();
+                SendClick(new Point(50, 50)); //swap back to mnk
+                Task.Delay(500, OrbitToken).Wait();
 
-            //now on director
+                //now on director
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         /// <summary>
@@ -4318,19 +4610,26 @@ namespace TnTCheckpoint
         /// </summary>
         private static async void SelectPortal()
         {
-            statussubtext = "Locating portal...";
-            UpdateTextDisplay();
+            try
+            {
+                statussubtext = "Locating portal...";
+                UpdateTextDisplay();
 
-            SendClick(ConvertAspectRatioCoords(50, 50));
-            Task.Delay(101, OrbitToken).Wait();
-            SendClick(ConvertAspectRatioCoords(50, 50));
-            Task.Delay(101, OrbitToken).Wait();
-            SetCursorPos(ConvertAspectRatioCoords(58, 87.08).X, ConvertAspectRatioCoords(58, 87.08).Y);
-            Task.Delay(101, OrbitToken).Wait();
-            SendClick(ConvertAspectRatioCoords(56.52, 87.08));
-            AwaitColorChange(50, 85, 2);
-            Task.Delay(1000, OrbitToken).Wait();
-            //now on portal
+                SendClick(ConvertAspectRatioCoords(50, 50));
+                Task.Delay(101, OrbitToken).Wait();
+                SendClick(ConvertAspectRatioCoords(50, 50));
+                Task.Delay(101, OrbitToken).Wait();
+                SetCursorPos(ConvertAspectRatioCoords(58, 87.08).X, ConvertAspectRatioCoords(58, 87.08).Y);
+                Task.Delay(101, OrbitToken).Wait();
+                SendClick(ConvertAspectRatioCoords(56.52, 87.08));
+                AwaitColorChange(50, 85, 2);
+                Task.Delay(1000, OrbitToken).Wait();
+                //now on portal
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         /// <summary>
@@ -4339,118 +4638,124 @@ namespace TnTCheckpoint
         /// <param name="act"></param>
         private static async void SelectActivity(string act)
         {
-
-            //change to controller input
-            _controller.SetButtonState(Xbox360Button.RightThumb, true);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.RightThumb, false);
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
-            Task.Delay(1000, OrbitToken).Wait();
-            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
-            if (OrbitToken.IsCancellationRequested) return;
-            Task.Delay(500, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-
-            //statussubtext = "Navitgating to activity..."; 
-            //UpdateTextDisplay();
-
-            int screenloc = 0;
-
-            //get which list the activity belongs to
-            if (RaidActivityOrder.Contains(act))
+            try
             {
-                screenloc = RaidActivityOrder.IndexOf(act);
+                //change to controller input
+                _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                if (forceorbit) return;
+                _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
+                Task.Delay(1000, OrbitToken).Wait();
+                _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
+                if (forceorbit) return;
+                Task.Delay(500, OrbitToken).Wait();
+                if (forceorbit) return;
 
-                if (RaidActivityOrder.IndexOf(act) > 5)
+                //statussubtext = "Navitgating to activity..."; 
+                //UpdateTextDisplay();
+
+                int screenloc = 0;
+
+                //get which list the activity belongs to
+                if (RaidActivityOrder.Contains(act))
                 {
-                    screenloc = RaidActivityOrder.IndexOf(act) - 6;
+                    screenloc = RaidActivityOrder.IndexOf(act);
 
-                    _controller.SetButtonState(Xbox360Button.Down, true);
-                    Task.Delay(101, OrbitToken).Wait();
-                    _controller.SetButtonState(Xbox360Button.Down, false);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    AwaitColorChange(50, 72, 1);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    Task.Delay(1600, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (RaidActivityOrder.IndexOf(act) > 5)
+                    {
+                        screenloc = RaidActivityOrder.IndexOf(act) - 6;
+
+                        _controller.SetButtonState(Xbox360Button.Down, true);
+                        Task.Delay(101, OrbitToken).Wait();
+                        _controller.SetButtonState(Xbox360Button.Down, false);
+                        if (forceorbit) return;
+                        AwaitColorChange(50, 72, 1);
+                        if (forceorbit) return;
+                        Task.Delay(1600, OrbitToken).Wait();
+                        if (forceorbit) return;
+                    }
                 }
-            }
-            if (DungeonActivityOrder.Contains(act))
-            {
-                screenloc = DungeonActivityOrder.IndexOf(act);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                if (OrbitToken.IsCancellationRequested) return;
-                AwaitColorChange(50, 72, 1);
-                if (OrbitToken.IsCancellationRequested) return;
-                Task.Delay(1500, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-
-                if (DungeonActivityOrder.IndexOf(act) > 5)
+                if (DungeonActivityOrder.Contains(act))
                 {
-                    screenloc = DungeonActivityOrder.IndexOf(act) - 6;
-
-                    _controller.SetButtonState(Xbox360Button.Down, true);
+                    screenloc = DungeonActivityOrder.IndexOf(act);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                     Task.Delay(101, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
-                    _controller.SetButtonState(Xbox360Button.Down, false);
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    if (forceorbit) return;
                     AwaitColorChange(50, 72, 1);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    Task.Delay(1600, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
+                    Task.Delay(1500, OrbitToken).Wait();
+                    if (forceorbit) return;
+
+                    if (DungeonActivityOrder.IndexOf(act) > 5)
+                    {
+                        screenloc = DungeonActivityOrder.IndexOf(act) - 6;
+
+                        _controller.SetButtonState(Xbox360Button.Down, true);
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
+                        _controller.SetButtonState(Xbox360Button.Down, false);
+                        AwaitColorChange(50, 72, 1);
+                        if (forceorbit) return;
+                        Task.Delay(1600, OrbitToken).Wait();
+                        if (forceorbit) return;
+                    }
                 }
-            }
 
-            if (PantheonActivityOrder.Contains(act))
+                if (PantheonActivityOrder.Contains(act))
+                {
+                    screenloc = PantheonActivityOrder.IndexOf(act) + 3;
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    if (forceorbit) return;
+                    AwaitColorChange(50, 72, 1);
+                    if (forceorbit) return;
+                    Task.Delay(300, OrbitToken).Wait();
+                    if (forceorbit) return;
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    if (forceorbit) return;
+                    AwaitColorChange(50, 72, 1);
+                    if (forceorbit) return;
+                    Task.Delay(1500, OrbitToken).Wait();
+                    if (forceorbit) return;
+                }
+
+                //flick to its location and click it.
+                Point selectpos = ConvertAspectRatioCoords(25, 45.5);
+                int horgap = ConvertAspectRatioCoords(50, 0).X - selectpos.X;
+                int vertgap = ConvertAspectRatioCoords(0, 75).Y - selectpos.Y;
+                if (screenloc > 5) screenloc = screenloc - 6;
+                if (screenloc > 2)
+                {
+                    screenloc = screenloc - 3;
+                    selectpos.Y = selectpos.Y + vertgap;
+                    selectpos.X = selectpos.X + horgap * screenloc;
+                }
+                else
+                {
+                    selectpos.X = selectpos.X + horgap * screenloc;
+                }
+
+                SendClick(selectpos);
+                Task.Delay(100, OrbitToken).Wait();
+                if (forceorbit) return;
+
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Task.Delay(100, OrbitToken).Wait();
+                if (forceorbit) return;
+                SendClick(selectpos);
+                SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
+                AwaitColorChange(85.9375, 83.33333333, 1);
+                Task.Delay(1000, OrbitToken).Wait();
+            }
+            catch (ThreadInterruptedException)
             {
-                screenloc = PantheonActivityOrder.IndexOf(act) + 3;
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                if (OrbitToken.IsCancellationRequested) return;
-                AwaitColorChange(50, 72, 1);
-                if (OrbitToken.IsCancellationRequested) return;
-                Task.Delay(300, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                if (OrbitToken.IsCancellationRequested) return;
-                AwaitColorChange(50, 72, 1);
-                if (OrbitToken.IsCancellationRequested) return;
-                Task.Delay(1500, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-            }
 
-            //flick to its location and click it.
-            Point selectpos = ConvertAspectRatioCoords(25, 45.5);
-            int horgap = ConvertAspectRatioCoords(50, 0).X - selectpos.X;
-            int vertgap = ConvertAspectRatioCoords(0, 75).Y - selectpos.Y;
-            if (screenloc > 5) screenloc = screenloc - 6;
-            if (screenloc > 2)
-            {
-                screenloc = screenloc - 3;
-                selectpos.Y = selectpos.Y + vertgap;
-                selectpos.X = selectpos.X + horgap * screenloc;
             }
-            else
-            {
-                selectpos.X = selectpos.X + horgap * screenloc;
-            }
-
-            SendClick(selectpos);
-            Task.Delay(100, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(100, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            SendClick(selectpos);
-            SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
-            AwaitColorChange(85.9375, 83.33333333, 1);
-            Task.Delay(1000, OrbitToken).Wait();
         }
 
         /// <summary>
@@ -4458,54 +4763,61 @@ namespace TnTCheckpoint
         /// </summary>
         public static void removecheckpoint()
         {
-            //highlight over the play button just to have a consistent location for the checkpoint on screen.
-            SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
-
-            Task.Delay(200, OrbitToken).Wait();
-
-            Color checkpoint = GetColorAt(ConvertAspectRatioCoords(66.640625, 77.0138889));
-
-
-            int avg = checkpoint.R + checkpoint.G + checkpoint.B;
-            avg = avg / 3;
-
-            List<int> colorlist = new List<int>();
-            colorlist.Add(checkpoint.R);
-            colorlist.Add(checkpoint.G);
-            colorlist.Add(checkpoint.B);
-            colorlist.Sort();
-            int gap = colorlist.Last() - colorlist.First();
-
-            if (avg > 200 & gap < 10) //making sure its some level of white
+            try
             {
-                //i got the checkpoint
+                //highlight over the play button just to have a consistent location for the checkpoint on screen.
+                SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
 
-                Point cursorpos = ConvertAspectRatioCoords(66.71875, 77.4305556);
+                Task.Delay(200, OrbitToken).Wait();
 
-                SetCursorPos(cursorpos.X, cursorpos.Y);
-                Task.Delay(101, OrbitToken).Wait();
-                SendClick(cursorpos);
-                Task.Delay(101, OrbitToken).Wait();
-                SetCursorPos(cursorpos.X, cursorpos.Y);
-                Task.Delay(101, OrbitToken).Wait();
-                SendClick(cursorpos);
-                Task.Delay(101, OrbitToken).Wait();
+                Color checkpoint = GetColorAt(ConvertAspectRatioCoords(66.640625, 77.0138889));
+
+
+                int avg = checkpoint.R + checkpoint.G + checkpoint.B;
+                avg = avg / 3;
+
+                List<int> colorlist = new List<int>();
+                colorlist.Add(checkpoint.R);
+                colorlist.Add(checkpoint.G);
+                colorlist.Add(checkpoint.B);
+                colorlist.Sort();
+                int gap = colorlist.Last() - colorlist.First();
+
+                if (avg > 200 & gap < 10) //making sure its some level of white
+                {
+                    //i got the checkpoint
+
+                    Point cursorpos = ConvertAspectRatioCoords(66.71875, 77.4305556);
+
+                    SetCursorPos(cursorpos.X, cursorpos.Y);
+                    Task.Delay(101, OrbitToken).Wait();
+                    SendClick(cursorpos);
+                    Task.Delay(101, OrbitToken).Wait();
+                    SetCursorPos(cursorpos.X, cursorpos.Y);
+                    Task.Delay(101, OrbitToken).Wait();
+                    SendClick(cursorpos);
+                    Task.Delay(101, OrbitToken).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.LeftThumb, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.LeftThumb, true);
+                    Task.Delay(500, OrbitToken).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.X, true);
+                    Task.Delay(3000, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.X, false);
+                    Task.Delay(101, OrbitToken).Wait();
+                }
 
                 _controller.SetButtonState(Xbox360Button.LeftThumb, true);
                 Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.LeftThumb, true);
-                Task.Delay(500, OrbitToken).Wait();
-
-                _controller.SetButtonState(Xbox360Button.X, true);
-                Task.Delay(3000, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.X, false);
-                Task.Delay(101, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.LeftThumb, false);
+                Task.Delay(1000, OrbitToken).Wait();
             }
+            catch (ThreadInterruptedException)
+            {
 
-            _controller.SetButtonState(Xbox360Button.LeftThumb, true);
-            Task.Delay(101, OrbitToken).Wait();
-            _controller.SetButtonState(Xbox360Button.LeftThumb, false);
-            Task.Delay(1000, OrbitToken).Wait();
+            }
         }
 
         /// <summary>
@@ -4513,40 +4825,47 @@ namespace TnTCheckpoint
         /// </summary>
         private static async void SelectMaster()
         {
-            statussubtext = "Swapping to master difficulty...";
-            UpdateTextDisplay();
+            try
+            {
+                statussubtext = "Swapping to master difficulty...";
+                UpdateTextDisplay();
 
-            Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            SendClick(selectpos);
-            AwaitColorChange(85.9375, 83.33333333, 1);
-            if (OrbitToken.IsCancellationRequested) return;
-            
-            selectpos = ConvertAspectRatioCoords(13.6719, 29.16666667);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(2000, OrbitToken).Wait();
-            AwaitColorChange(39.9609375, 49.23611111111, 1);
-            Task.Delay(1000,OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            SendClick(selectpos);
-            Task.Delay(1000, OrbitToken).Wait();
+                Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                SendClick(selectpos);
+                AwaitColorChange(85.9375, 83.33333333, 1);
+                if (forceorbit) return;
 
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
+                selectpos = ConvertAspectRatioCoords(13.6719, 29.16666667);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Task.Delay(2000, OrbitToken).Wait();
+                AwaitColorChange(39.9609375, 49.23611111111, 1);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
+                SendClick(selectpos);
+                Task.Delay(1000, OrbitToken).Wait();
 
-            AwaitColorChange(85.9375, 83.33333333, 1);
-            SendClick(selectpos);
-            Task.Delay(1000, OrbitToken).Wait();
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+
+                AwaitColorChange(85.9375, 83.33333333, 1);
+                SendClick(selectpos);
+                Task.Delay(1000, OrbitToken).Wait();
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         /// <summary>
@@ -4554,63 +4873,70 @@ namespace TnTCheckpoint
         /// </summary>
         private static async void SelectFeats(List<string> feats)
         {
-            statussubtext = "Selecting feats...";
-            UpdateTextDisplay();
-
-            Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            SendClick(selectpos);
-            AwaitColorChange(33.7890625, 25.8333333, 1);
-            if (OrbitToken.IsCancellationRequested) return;
-
-            selectpos = ConvertAspectRatioCoords(33.7890625, 25.8333333);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(100, OrbitToken).Wait();
-            AwaitColorChange(33.7109375, 37.0833333, 1);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-
-            int i = 0;
-            double gap = 5.2;
-            foreach (string f in feats)
+            try
             {
-                //"token","phase","battalions","challenges","cutthroat"
-                double featslot = 0;
-                if (f == "token") featslot = gap;
-                if (f == "phase") featslot = gap*2;
-                if (f == "battalions") featslot = gap * 3;
-                if (f == "challenges") featslot = gap * 4;
-                if (f == "cutthroat") featslot = gap * 5;
+                statussubtext = "Selecting feats...";
+                UpdateTextDisplay();
 
-                selectpos = ConvertAspectRatioCoords(33.7890625 + (gap * i), 25.8333333);
+                Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
                 SetCursorPos(selectpos.X, selectpos.Y);
-                Task.Delay(200, OrbitToken).Wait();
-                selectpos = ConvertAspectRatioCoords(33.7890625 + featslot, 36.52777777);
-                SetCursorPos(selectpos.X, selectpos.Y);
-                Task.Delay(200, OrbitToken).Wait();
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
                 SendClick(selectpos);
-                Task.Delay(200, OrbitToken).Wait();
-                i++;
+                AwaitColorChange(33.7890625, 25.8333333, 1);
+                if (forceorbit) return;
+
+                selectpos = ConvertAspectRatioCoords(33.7890625, 25.8333333);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Task.Delay(100, OrbitToken).Wait();
+                AwaitColorChange(33.7109375, 37.0833333, 1);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
+
+                int i = 0;
+                double gap = 5.2;
+                foreach (string f in feats)
+                {
+                    //"token","phase","battalions","challenges","cutthroat"
+                    double featslot = 0;
+                    if (f == "token") featslot = gap;
+                    if (f == "phase") featslot = gap * 2;
+                    if (f == "battalions") featslot = gap * 3;
+                    if (f == "challenges") featslot = gap * 4;
+                    if (f == "cutthroat") featslot = gap * 5;
+
+                    selectpos = ConvertAspectRatioCoords(33.7890625 + (gap * i), 25.8333333);
+                    SetCursorPos(selectpos.X, selectpos.Y);
+                    Task.Delay(200, OrbitToken).Wait();
+                    selectpos = ConvertAspectRatioCoords(33.7890625 + featslot, 36.52777777);
+                    SetCursorPos(selectpos.X, selectpos.Y);
+                    Task.Delay(200, OrbitToken).Wait();
+                    SendClick(selectpos);
+                    Task.Delay(200, OrbitToken).Wait();
+                    i++;
+                }
+
+                Task.Delay(1000, OrbitToken).Wait();
+
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+
+                AwaitColorChange(85.9375, 83.33333333, 1);
+                SendClick(selectpos);
+                Task.Delay(1000, OrbitToken).Wait();
             }
+            catch (ThreadInterruptedException)
+            {
 
-            Task.Delay(1000, OrbitToken).Wait();
-
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            AwaitColorChange(85.9375, 83.33333333, 1);
-            SendClick(selectpos);
-            Task.Delay(1000, OrbitToken).Wait();
+            }
         }
 
         /// <summary>
@@ -4618,441 +4944,504 @@ namespace TnTCheckpoint
         /// </summary>
         private static async void ClearFeats()
         {
-            statussubtext = "Selecting feats...";
-            UpdateTextDisplay();
-
-            Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            SendClick(selectpos);
-            AwaitColorChange(33.7890625, 25.8333333, 1);
-            if (OrbitToken.IsCancellationRequested) return;
-
-            selectpos = ConvertAspectRatioCoords(33.7890625, 25.8333333);
-            SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(100, OrbitToken).Wait();
-            AwaitColorChange(33.7109375, 37.0833333, 1);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-
-            double gap = 5.2;
-            for(int i = 0; i < 5; i++)
+            try
             {
-                //"token","phase","battalions","challenges","cutthroat"
+                statussubtext = "Selecting feats...";
+                UpdateTextDisplay();
 
-                selectpos = ConvertAspectRatioCoords(33.7890625 + (gap * i), 25.8333333);
+                Point selectpos = ConvertAspectRatioCoords(86.29, 77.5694);
                 SetCursorPos(selectpos.X, selectpos.Y);
-                Task.Delay(200, OrbitToken).Wait();
-                selectpos = ConvertAspectRatioCoords(33.7890625, 36.52777777);
-                SetCursorPos(selectpos.X, selectpos.Y);
-                Task.Delay(200, OrbitToken).Wait();
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
                 SendClick(selectpos);
-                Task.Delay(200, OrbitToken).Wait();
+                AwaitColorChange(33.7890625, 25.8333333, 1);
+                if (forceorbit) return;
+
+                selectpos = ConvertAspectRatioCoords(33.7890625, 25.8333333);
+                SetCursorPos(selectpos.X, selectpos.Y);
+                Task.Delay(100, OrbitToken).Wait();
+                AwaitColorChange(33.7109375, 37.0833333, 1);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
+
+                double gap = 5.2;
+                for (int i = 0; i < 5; i++)
+                {
+                    //"token","phase","battalions","challenges","cutthroat"
+
+                    selectpos = ConvertAspectRatioCoords(33.7890625 + (gap * i), 25.8333333);
+                    SetCursorPos(selectpos.X, selectpos.Y);
+                    Task.Delay(200, OrbitToken).Wait();
+                    selectpos = ConvertAspectRatioCoords(33.7890625, 36.52777777);
+                    SetCursorPos(selectpos.X, selectpos.Y);
+                    Task.Delay(200, OrbitToken).Wait();
+                    SendClick(selectpos);
+                    Task.Delay(200, OrbitToken).Wait();
+                }
+
+                Task.Delay(1000, OrbitToken).Wait();
+
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                _controller.SetButtonState(Xbox360Button.B, false);
+
+                AwaitColorChange(85.9375, 83.33333333, 1);
+                SendClick(selectpos);
+                Task.Delay(1000, OrbitToken).Wait();
             }
+            catch (ThreadInterruptedException)
+            {
 
-            Task.Delay(1000, OrbitToken).Wait();
-
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, true);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            _controller.SetButtonState(Xbox360Button.B, false);
-
-            AwaitColorChange(85.9375, 83.33333333, 1);
-            SendClick(selectpos);
-            Task.Delay(1000, OrbitToken).Wait();
+            }
         }
 
         private static async void InvitePlayer(string chat)
         {
-            statussubtext = "Invitingn to fireteam...";
-            UpdateTextDisplay();
+            try
+            {
+                statussubtext = "Invitingn to fireteam...";
+                UpdateTextDisplay();
 
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
 
-            InputSimulator sim = new InputSimulator();
-            sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            sim.Keyboard.TextEntry(chat);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                InputSimulator sim = new InputSimulator();
+                sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
+                Task.Delay(101, OrbitToken).Wait();
+                if (forceorbit) return;
+                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
+                sim.Keyboard.TextEntry(chat);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (forceorbit) return;
+                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+            }
+            catch (ThreadInterruptedException)
+            {
+
+            }
         }
 
         private static bool JoinFireteamFromOrbit(string chat, string activ) 
         {
-            statussubtext = "Typing in fireteam name...";
-            UpdateTextDisplay();
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            InputSimulator sim = new InputSimulator();
-            sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.TextEntry(chat);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-
-            statussubtext = "Checking if theres an error code...";
-            UpdateTextDisplay();
-
-            Task.Delay(5000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-            int iconwidth = (int)Math.Round(width * 0.073125);
-            int iconheight = (int)Math.Round(height * 0.04362);
-            Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            Graphics g = Graphics.FromImage(bmpScreenshot);
-            g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-            bmpScreenshot.Dispose();
-
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            if (ocrstring.ToLower().Contains("unable") || ocrstring == "")
+            try
             {
-                statussubtext = "Error code detected :(";
-                UpdateTextDisplay();
-                return false;
-            }
-            else
-            {
-                //joining
-                statussubtext = "Join successful. Detecting first black screen...";
+                statussubtext = "Typing in fireteam name...";
                 UpdateTextDisplay();
 
-                while (!CheckBlackScreen()) //wait until on next black screen. check 2 spots because theres all kinds of black in a lot of fly ins
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+
+                InputSimulator sim = new InputSimulator();
+                sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
+                Task.Delay(101, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+                sim.Keyboard.TextEntry(chat);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+
+                statussubtext = "Checking if theres an error code...";
+                UpdateTextDisplay();
+
+                bool works = false;
+                DateTime breaktime = DateTime.Now.AddSeconds(10);
+                while (true)
                 {
+
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = (int)Math.Round(width * 0.073125);
+                    int iconheight = (int)Math.Round(height * 0.04362);
+                    Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
+                    int xpos = startcoords.X;
+                    int ypos = startcoords.Y;
+
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                    Task.Delay(1000, OrbitToken).Wait();
                     if (OrbitToken.IsCancellationRequested) return false;
+
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
+                    if (ocrstring.Contains("pleasewait")) works = true;
+                    if (ocrstring.Contains("unable")) works = false;
+                    if (DateTime.Now > breaktime) break;
                 }
 
-                AwaitColorChange(3, 3, 1); //come out of black screen
-
-                DateTime bailout = DateTime.Now.AddSeconds(65);
-
-                if(activ != "RON" & activ != "PR")
+                if (!works)
                 {
-
-                    statussubtext = "Join successful. Waiting for second black screen...";
+                    statussubtext = "Error code detected :(";
+                    UpdateTextDisplay();
+                    return false;
+                }
+                else
+                {
+                    //joining
+                    statussubtext = "Join successful. Detecting first black screen...";
                     UpdateTextDisplay();
 
-                    while (!CheckBlackScreen()) //wait until on next black screen
+                    while (!CheckBlackScreen()) //wait until on next black screen.
                     {
                         if (OrbitToken.IsCancellationRequested) return false;
-                        if (DateTime.Now > bailout) break;
+                        Task.Delay(30).Wait();
                     }
 
-                    if (DateTime.Now < bailout) AwaitColorChange(90, 90, 1); //come out of black screen, boots on ground
+                    while (CheckBlackScreen())//black screen found, wait for it to go away
+                    {
+                        if (OrbitToken.IsCancellationRequested) return false;
+                        Task.Delay(30).Wait();
+                    }
 
+                    AwaitColorChange(3, 3, 1); //come out of black screen
+
+                    DateTime bailout = DateTime.Now.AddSeconds(65);
+
+                    if (activ != "RON" & activ != "PR")
+                    {
+
+                        statussubtext = "Join successful. Waiting for second black screen...";
+                        UpdateTextDisplay();
+
+                        while (!CheckBlackScreen()) //wait until on next black screen
+                        {
+                            if (OrbitToken.IsCancellationRequested) return false;
+                            if (DateTime.Now > bailout) break;
+                            Task.Delay(30).Wait();
+                        }
+
+                        while (CheckBlackScreen())//black screen found, wait for it to go away
+                        {
+                            if (OrbitToken.IsCancellationRequested) return false;
+                            Task.Delay(30).Wait();
+                        }
+
+                        if (DateTime.Now < bailout) AwaitColorChange(90, 90, 1); //come out of black screen, boots on ground
+
+                    }
+
+                    Task.Delay(3000, OrbitToken).Wait();
+
+                    statussubtext = "Join successful. Now boots on ground...";
+                    UpdateTextDisplay();
+
+                    bootsonground = true;
+
+                    return true;
                 }
-
-                Task.Delay(3000, OrbitToken).Wait();
-
-                statussubtext = "Join successful. Now boots on ground...";
-                UpdateTextDisplay();
-
-                bootsonground = true;
-
-                return true;
+            }
+            catch(ThreadInterruptedException)
+            {
+                return false;
             }
         } //TODO check if more activities skip second blackscreen on join
 
         private static bool JoinFireteamInOrbit(string chat)
         {
-            statussubtext = "Typing in fireteam name...";
-            UpdateTextDisplay();
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            InputSimulator sim = new InputSimulator();
-            sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
-            Task.Delay(101, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.TextEntry(chat);
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-            sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-
-            statussubtext = "Checking if theres an error code...";
-            UpdateTextDisplay();
-
-            Task.Delay(5000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-            int iconwidth = (int)Math.Round(width * 0.073125);
-            int iconheight = (int)Math.Round(height * 0.04362);
-            Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            Graphics g = Graphics.FromImage(bmpScreenshot);
-            g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
-            bmpScreenshot.Dispose();
-
-            Task.Delay(1000, OrbitToken).Wait();
-            if (OrbitToken.IsCancellationRequested) return false;
-
-            if (ocrstring.ToLower().Contains("unable") || ocrstring == "")
+            try
             {
-                statussubtext = "Error code detected :(";
-                UpdateTextDisplay();
-                return false;
-            }
-            else
-            {
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.TextEntry("You may now launch the map, and get prepared to change characters.");
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.TextEntry("I will tell you when to hit confirm on changing characters. Please navigate to the \"confirm\" screen.");
-                Task.Delay(1000, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-
-                //joining
-                statussubtext = "Join successful. Detecting first black screen...";
+                statussubtext = "Typing in fireteam name...";
                 UpdateTextDisplay();
 
+                Task.Delay(1000, OrbitToken).Wait();
                 if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
 
-                while (!CheckBlackScreen()) //wait until on next black screen
-                {
-                    if (OrbitToken.IsCancellationRequested) return false;
-                    Task.Delay(101, OrbitToken).Wait();
-                }
-
-                //send notice message
-                if (OrbitToken.IsCancellationRequested) return false;
-                sim.Keyboard.TextEntry("Please change characters now.");
+                InputSimulator sim = new InputSimulator();
+                sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
                 Task.Delay(101, OrbitToken).Wait();
                 if (OrbitToken.IsCancellationRequested) return false;
                 sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+                sim.Keyboard.TextEntry(chat);
+                Task.Delay(1000, OrbitToken).Wait();
+                if (OrbitToken.IsCancellationRequested) return false;
+                sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
 
-                return true;
+                statussubtext = "Checking if theres an error code...";
+                UpdateTextDisplay();
+
+                bool works = false;
+                DateTime breaktime = DateTime.Now.AddSeconds(10);
+                while (true)
+                {
+
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = (int)Math.Round(width * 0.073125);
+                    int iconheight = (int)Math.Round(height * 0.04362);
+                    Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
+                    int xpos = startcoords.X;
+                    int ypos = startcoords.Y;
+
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                    Task.Delay(1000, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return false;
+
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
+                    if (ocrstring.Contains("pleasewait")) works = true;
+                    if (ocrstring.Contains("unable")) works = false;
+                    if (DateTime.Now > breaktime) break;
+                }
+
+                if (!works)
+                {
+                    statussubtext = "Error code detected :(";
+                    UpdateTextDisplay();
+                    return false;
+                }
+                else
+                {
+
+                    //joining
+                    statussubtext = "Join successful. Detecting first black screen...";
+                    UpdateTextDisplay();
+
+                    if (OrbitToken.IsCancellationRequested) return false;
+                    sim.Keyboard.KeyDown(VirtualKeyCode.RETURN);
+                    Task.Delay(101, OrbitToken).Wait();
+                    sim.Keyboard.KeyUp(VirtualKeyCode.RETURN);
+                    Task.Delay(1000, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return false;
+                    sim.Keyboard.TextEntry("You may now launch the map, and get prepared to change characters.");
+                    Task.Delay(1000, OrbitToken).Wait();
+
+                    if (OrbitToken.IsCancellationRequested) return false;
+                    sim.Keyboard.KeyDown(VirtualKeyCode.RETURN);
+                    Task.Delay(101, OrbitToken).Wait();
+                    sim.Keyboard.KeyUp(VirtualKeyCode.RETURN);
+
+                    Task.Delay(2000,OrbitToken).Wait();
+
+                    if (OrbitToken.IsCancellationRequested) return false;
+
+                    sim.Keyboard.KeyDown(VirtualKeyCode.RETURN);
+                    Task.Delay(101, OrbitToken).Wait();
+                    sim.Keyboard.KeyUp(VirtualKeyCode.RETURN);
+                    Task.Delay(101, OrbitToken).Wait();
+
+                    while (!CheckBlackScreen()) //wait until on next black screen
+                    {
+                        if (OrbitToken.IsCancellationRequested) return false;
+                        Task.Delay(20, OrbitToken).Wait();
+                    } //found black screen
+
+                    //send notice message
+                    if (OrbitToken.IsCancellationRequested) return false;
+                    sim.Keyboard.TextEntry("Please change characters now.");
+                    Task.Delay(101, OrbitToken).Wait();
+                    if (OrbitToken.IsCancellationRequested) return false;
+                    sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                    if (OrbitToken.IsCancellationRequested) return false;
+
+                    while (CheckBlackScreen()) //wait for black screen to end, then return to char select
+                    {
+                        if (OrbitToken.IsCancellationRequested) return false;
+                        Task.Delay(20, OrbitToken).Wait();
+                    }
+
+                    return true;
+                }
+            }
+            catch (ThreadInterruptedException)
+            {
+                return false;
             }
         }
 
         private static void CleanCheckpoints()
         {
-
-            deletingcheckpoint = true;
-
-            List<string> order = new List<string>();
-            order.AddRange(RaidActivityOrder);
-            order.AddRange(DungeonActivityOrder);
-            order.AddRange(PantheonActivityOrder);
-
-            foreach (string activity in checkpoints.Keys)
+            try
             {
-                if (activity.Contains("master"))
-                {
-                    int indx = order.IndexOf(activity.Replace("master", ""));
-                    order.Insert(indx + 1, activity);
-                }
-            }
+                deletingcheckpoint = true;
 
-            for (int i = 1; i <= 3; i++)
-            {
-                SelectChar(i);
-                if (OrbitToken.IsCancellationRequested) return;
-                SelectDirector();
-                if (OrbitToken.IsCancellationRequested) return;
-                SelectPortal();
-                if (OrbitToken.IsCancellationRequested) return;
-                int indx = 0;
-                int page = 0;
-
-                List<string> activ = order;
+                List<string> order = new List<string>();
+                order.AddRange(RaidActivityOrder);
+                order.AddRange(DungeonActivityOrder);
+                order.AddRange(PantheonActivityOrder);
 
                 foreach (string activity in checkpoints.Keys)
                 {
-                    foreach (int output in checkpoints[activity].Values)
+                    if (activity.Contains("master"))
                     {
-                        if (output == i)
-                        {
-                            activ.Remove(activity);
-                        }
-                        if (OrbitToken.IsCancellationRequested) return;
+                        int indx = order.IndexOf(activity.Replace("master", ""));
+                        order.Insert(indx + 1, activity);
                     }
                 }
 
-                foreach (string activity in activ)
+                for (int i = 1; i <= 3; i++)
                 {
-                    statussubtext = "Clearing out " + activity;
-                    UpdateTextDisplay();
-                    if (initializing) UpdateStatusBar("Initializing... Cleaning up character slot " + i + " on activity " + activ.IndexOf(activity) + "/" + activ.Count(), UserStatusType.DoNotDisturb);
-                    if (!initializing) UpdateStatusBar("Cleaning up character slot " + i + " on activity " + activ.IndexOf(activity) + "/" + activ.Count(), UserStatusType.Idle);
+                    SelectChar(i);
+                    if (forceorbit) return;
+                    SelectDirector();
+                    if (forceorbit) return;
+                    SelectPortal();
+                    if (forceorbit) return;
+                    int indx = 0;
+                    int page = 0;
 
-                    string tmp = activity.Replace("master", "");
+                    List<string> activ = order;
 
-                    //this whole block makes sure I select the right page, and then tricks selectactivity into thinking im on a different page.
-                    if (RaidActivityOrder.Contains(tmp)) 
+                    foreach (string activity in checkpoints.Keys)
                     {
-                        indx = RaidActivityOrder.IndexOf(tmp);
-                        if (indx > 5)
+                        foreach (int output in checkpoints[activity].Values)
                         {
-                            if (page != 1)
+                            if (output == i)
                             {
-                                page = 1;
+                                activ.Remove(activity);
                             }
-                            else
-                            {
-                                tmp = RaidActivityOrder[indx - 6];
-                            }
+                            if (forceorbit) return;
                         }
                     }
-                    if (DungeonActivityOrder.Contains(tmp))
+
+                    foreach (string activity in activ)
                     {
-                        if(page < 2)
+                        statussubtext = "Clearing out " + activity;
+                        UpdateTextDisplay();
+                        if (initializing) UpdateStatusBar("Initializing... Cleaning up character slot " + i + " on activity " + activ.IndexOf(activity) + "/" + activ.Count(), UserStatusType.DoNotDisturb);
+                        if (!initializing) UpdateStatusBar("Cleaning up character slot " + i + " on activity " + activ.IndexOf(activity) + "/" + activ.Count(), UserStatusType.Idle);
+
+                        string tmp = activity.Replace("master", "");
+
+                        //this whole block makes sure I select the right page, and then tricks selectactivity into thinking im on a different page.
+                        if (RaidActivityOrder.Contains(tmp))
                         {
-                            indx = DungeonActivityOrder.IndexOf(tmp);
-                            page = 2;
-                        }
-                        else
-                        {
-                            indx = DungeonActivityOrder.IndexOf(tmp);
+                            indx = RaidActivityOrder.IndexOf(tmp);
                             if (indx > 5)
                             {
-                                if (page != 3)
+                                if (page != 1)
                                 {
-                                    page = 3;
-                                    tmp = RaidActivityOrder[indx];
+                                    page = 1;
                                 }
                                 else
                                 {
                                     tmp = RaidActivityOrder[indx - 6];
                                 }
                             }
+                        }
+                        if (DungeonActivityOrder.Contains(tmp))
+                        {
+                            if (page < 2)
+                            {
+                                indx = DungeonActivityOrder.IndexOf(tmp);
+                                page = 2;
+                            }
+                            else
+                            {
+                                indx = DungeonActivityOrder.IndexOf(tmp);
+                                if (indx > 5)
+                                {
+                                    if (page != 3)
+                                    {
+                                        page = 3;
+                                        tmp = RaidActivityOrder[indx];
+                                    }
+                                    else
+                                    {
+                                        tmp = RaidActivityOrder[indx - 6];
+                                    }
+                                }
+                                else
+                                {
+                                    tmp = RaidActivityOrder[indx];
+                                }
+                            }
+                        }
+                        if (PantheonActivityOrder.Contains(tmp))
+                        {
+                            indx = PantheonActivityOrder.IndexOf(tmp) + 3;
+                            if (page < 2)
+                            {
+                                page = 5;
+                            }
+                            else if (page < 4)
+                            {
+                                tmp = DungeonActivityOrder[indx];
+                                page = 5;
+                            }
                             else
                             {
                                 tmp = RaidActivityOrder[indx];
                             }
                         }
+
+                        SelectActivity(tmp);
+                        if (forceorbit) return;
+                        if (activity.Contains("master")) SelectMaster();
+                        if (forceorbit) return;
+                        SendClick(new Point(50, 50));
+
+                        if (forceorbit) return;
+
+                        removecheckpoint();
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
+
+                        _controller.SetButtonState(Xbox360Button.B, true);
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
+                        _controller.SetButtonState(Xbox360Button.B, false);
+                        Task.Delay(101, OrbitToken).Wait();
+                        if (forceorbit) return;
                     }
-                    if (PantheonActivityOrder.Contains(tmp))
-                    {
-                        indx = PantheonActivityOrder.IndexOf(tmp) + 3;
-                        if (page < 2)
-                        {
-                            page = 5;
-                        }
-                        else if (page < 4)
-                        {
-                            tmp = DungeonActivityOrder[indx];
-                            page = 5;
-                        }
-                        else
-                        {
-                            tmp = RaidActivityOrder[indx];
-                        }
-                    }
-
-                    SelectActivity(tmp);
-                    if (OrbitToken.IsCancellationRequested) return;
-                    if(activity.Contains("master")) SelectMaster();
-                    if (OrbitToken.IsCancellationRequested) return;
-                    SendClick(new Point(50, 50));
-
-                    if (OrbitToken.IsCancellationRequested) return;
-
-                    removecheckpoint();
-                    Task.Delay(101, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
 
                     _controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
                     _controller.SetButtonState(Xbox360Button.B, false);
                     Task.Delay(101, OrbitToken).Wait();
-                    if (OrbitToken.IsCancellationRequested) return;
+                    if (forceorbit) return;
+
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    if (forceorbit) return;
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    if (forceorbit) return;
+
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    Task.Delay(101, OrbitToken).Wait();
+                    if (forceorbit) return;
+
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(101, OrbitToken).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    if (forceorbit) return;
+
+                    ReturnToCharSelectFast();
                 }
+            }
+            catch (ThreadInterruptedException)
+            {
 
-                _controller.SetButtonState(Xbox360Button.B, true);
-                Task.Delay(101, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-                _controller.SetButtonState(Xbox360Button.B, false);
-                Task.Delay(101, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-
-                _controller.SetButtonState(Xbox360Button.B, true);
-                Task.Delay(101, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-                _controller.SetButtonState(Xbox360Button.B, false);
-                if (OrbitToken.IsCancellationRequested) return;
-
-                _controller.SetButtonState(Xbox360Button.B, true);
-                Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.B, false);
-                Task.Delay(101, OrbitToken).Wait();
-                if (OrbitToken.IsCancellationRequested) return;
-
-                _controller.SetButtonState(Xbox360Button.B, true);
-                Task.Delay(101, OrbitToken).Wait();
-                _controller.SetButtonState(Xbox360Button.B, false);
-                if (OrbitToken.IsCancellationRequested) return;
-
-                ReturnToCharSelectFast();
             }
         }
 
@@ -5062,79 +5451,92 @@ namespace TnTCheckpoint
 
         public static void savecheckpoints()
         {
-            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            string output = "";
-
-            foreach (string activityname in checkpoints.Keys)
+            try
             {
-                output = output + activityname;
-                if (checkpoints[activityname].Count > 0)
+                string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string output = "";
+
+                foreach (string activityname in checkpoints.Keys)
                 {
-                    foreach (string checkpointname in checkpoints[activityname].Keys)
+                    output = output + activityname;
+                    if (checkpoints[activityname].Count > 0)
                     {
-                        output = output + "~" + checkpointname + "." + checkpoints[activityname][checkpointname];
+                        foreach (string checkpointname in checkpoints[activityname].Keys)
+                        {
+                            output = output + "~" + checkpointname + "." + checkpoints[activityname][checkpointname];
+                        }
                     }
+                    output = output + "-";
                 }
-                output = output + "-";
+
+                output = output.TrimEnd('-');
+
+
+                if (File.Exists(path + "\\checkpoints.ini"))
+                {
+                    File.Delete(path + "\\checkpoints.ini");
+                }
+                File.WriteAllText(path + "\\checkpoints.ini", output);
             }
-
-            output = output.TrimEnd('-');
-
-
-            if (File.Exists(path + "\\checkpoints.ini"))
+            catch (ThreadInterruptedException)
             {
-                File.Delete(path + "\\checkpoints.ini");
+
             }
-            File.WriteAllText(path + "\\checkpoints.ini", output);
         }
 
         public static bool checkreset()
         {
-            string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-            long lastchecktime = DateTime.Now.AddYears(1).Ticks;
             try
             {
-                lastchecktime = long.Parse(File.ReadAllText(path + "\\resettimer.ini"));
-            }
-            catch
-            {
+                string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-            }
+                long lastchecktime = DateTime.Now.AddYears(1).Ticks;
+                try
+                {
+                    lastchecktime = long.Parse(File.ReadAllText(path + "\\resettimer.ini"));
+                }
+                catch
+                {
 
-            //figure out when the next reset is after the last check, store it in temp.
-            DateTime lastcheckeddatetime = DateTime.SpecifyKind(new DateTime(lastchecktime), DateTimeKind.Utc);
-            DateTime temp = DateTime.SpecifyKind(new DateTime(lastchecktime), DateTimeKind.Utc);
+                }
 
-            while (temp.Minute != 0)
-            {
-                int gap = 60 - temp.Minute;
-                temp = temp.AddMinutes(gap);
-            }
-            while (temp.Hour != 17)
-            {
-                temp = temp.AddHours(1);
-            }
-            while (temp.DayOfWeek != DayOfWeek.Tuesday)
-            {
-                temp = temp.AddDays(1);
-            }
+                //figure out when the next reset is after the last check, store it in temp.
+                DateTime lastcheckeddatetime = DateTime.SpecifyKind(new DateTime(lastchecktime), DateTimeKind.Utc);
+                DateTime temp = DateTime.SpecifyKind(new DateTime(lastchecktime), DateTimeKind.Utc);
 
-            DateTime now = DateTime.Now.ToUniversalTime();
+                while (temp.Minute != 0)
+                {
+                    int gap = 60 - temp.Minute;
+                    temp = temp.AddMinutes(gap);
+                }
+                while (temp.Hour != 17)
+                {
+                    temp = temp.AddHours(1);
+                }
+                while (temp.DayOfWeek != DayOfWeek.Tuesday)
+                {
+                    temp = temp.AddDays(1);
+                }
 
-            //compare intended reset to now.
-            if (temp > now)
+                DateTime now = DateTime.Now.ToUniversalTime();
+
+                //compare intended reset to now.
+                if (temp > now)
+                {
+                    //reset didnt happen yet.
+                    return false;
+                }
+                else
+                {
+                    //reset has happened.
+
+                    return true;
+                }
+            }
+            catch (ThreadInterruptedException)
             {
-                //reset didnt happen yet.
                 return false;
             }
-            else
-            {
-                //reset has happened.
-
-                return true;
-            }
-
         }
 
         public static void KillProcess()
