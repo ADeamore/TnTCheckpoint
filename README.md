@@ -13,8 +13,8 @@ This is a bot initially designed specifically for my clans use. It requires a sa
 6. A sacrificial Destiny 2 account to be used as a bot, running specifically on Steam.
 
 ## Required/Recommended settings:
-1. 30FPS (Required)
-2. Resolution NOT stretched or windowed. Fullscreen at whatever resolution is native, or the display is set to. (Required)
+1. 30FPS cap (recommended)
+2. Resolution NOT stretched or windowed. Fullscreen at whatever resolution is native, or the display is set to. 1920x1080 or larger. (Required)
 3. HDR off & Brightness 6 (Recommended but shouldnt be required)
 note, this was designed on/works well on ultrawide. Resolutions below 1920x1080 may have issues with character recognition as I've not tested anything below that. 
 
