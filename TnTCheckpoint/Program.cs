@@ -1550,6 +1550,10 @@ namespace TnTCheckpoint
                         done = true;
                         CommandGrabCheckpoint(message);
                         return;
+                    case "!grabcheckpointandconfirm":
+                        done = true;
+                        CommandGrabCheckpointAndConfirm(message);
+                        return;
                     case "!deletecheckpoint":
                         done = true;
                         CommandDeleteCheckpoint(message);
@@ -1557,6 +1561,10 @@ namespace TnTCheckpoint
                     case "!listcheckpoints":
                         done = true;
                         CommandListCheckpoint(message);
+                        return;
+                    case "!launchandhold":
+                        done = true;
+                        CommandLaunchAndHold(message);
                         return;
                     case "!farmcheckpoint":
                         done = true;
@@ -1615,11 +1623,21 @@ namespace TnTCheckpoint
                         done = true;
                         verifylevel++;
                         return;
+                    case "!v":
+                        done = true;
+                        verifylevel++;
+                        return;
                     case "!forcerestart":
                         done = true;
                         CommandForceRestart(message);
                         return;
                     case "!cancel":
+                        verifying = false;
+                        verifylevel = 0;
+                        done = true;
+                        client.Rest.SendMessageAsync(message.ChannelId, "Verification cancelled.");
+                        return;
+                    case "!c":
                         verifying = false;
                         verifylevel = 0;
                         done = true;
@@ -1924,7 +1942,7 @@ namespace TnTCheckpoint
                 if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
                 int namestartindex = 3;
 
-                if (messagechunks[2].ToLower() == "master")
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
                 {
                     namestartindex = 4;
                     ckpointname = messagechunks[3];
@@ -2142,162 +2160,6 @@ namespace TnTCheckpoint
             }).Start();
         } 
 
-        private static async void CommandHelp(Message message)
-        {
-            //check if the command is run on its own with no arguments. if it is, run ListCommands.
-            //else, check if the command exists. if the command exists, give its specific description.
-            string[] parse = message.Content.Split(' ');
-            if (parse.Length == 1)
-            {
-                CommandListCommands(message);
-                return;
-            }
-            else
-            {
-                bool done = false;
-                switch (parse[1].ToLower().Replace("!", ""))
-                {
-                    case "listcommands":
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ListCommands:\n" +
-                            " - I'll list all available commands and shorthand definitions of them.\n" +
-                            " - Usage: !ListCommands\n");
-                        done = true;
-                        return;
-
-                    case "activities":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                        "### !Activities\n" +
-                        " - I'll list all available activities.\n" +
-                        " - usage: !Activities\n");
-                        done = true;
-                        return;
-                    case "holdload":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                        "### !HoldLoad: \n" +
-                        " - I'll hold a load by joining on the person until the !EndHold command is run.\n" +
-                        " - usage: !HoldLoad BungieUsername#0000\n");
-                        done = true;
-                        return;
-                    case "endhold":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !EndHold: \n" +
-                            " - First I will confirm that you do want to end the hold, with !verify.\n" +
-                            " - After that, I'll return to orbit and enter idle mode.\n" +
-                            " - usage: !EndHold \n");
-                        done = true;
-                        return;
-                    case "grabcheckpoint":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !GrabCheckpoint: \n" +
-                            " - Has me join on the username given with the command, and then wait for a wipe so that I have the checkpoint, at which point I'll then return to orbit and idle.\n" +
-                            " - usage: !GrabCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000 \n" +
-                            " - example: !GrabCheckpoint WR ogre ItAvvy#7006\n" +
-                            " - If I already have a checkpoint in that activity on all 3 characters I will list them and ask you to delete one using !deletecheckpoint.");
-                        done = true;
-                        return;
-                    case "deletecheckpoint":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !DeleteCheckpoint:\n" +
-                            " - I'll delete a checkpoint from a given activity with a given name so that a new checkpoint may be gotten on that character.\n" +
-                            " - usage: !DeleteCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint. a-z, 0-9 only] \n" +
-                            " - example: !DeleteCheckpoint WR master ogre");
-                        done = true;
-                        return;
-                    case "listcheckpoints":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ListCheckpoint: \n" +
-                            " - Lists out all checkpoints on a given activity, and specifies master in cases where its applicable.\n" +
-                            " - usage: !ListCheckpoint [activity shorthand (!activities)]\n" +
-                            " - use !ListCheckpoint All - to see all available checkpoints across all activities");
-                        done = true;
-                        return;
-                    case "farmcheckpoint":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !FarmCheckpoint: \n" +
-                            " - I'll load the character the given checkpoint is on, and I'll wait in orbit for you to join. The moment you join I'll launch the activity, transferring the checkpoint on load-in. Then, I will return to orbit to wait to launch again. Use !EndFarm to end the farm. If you specify feats with the optional modifier, I will try to launch the checkpoint with those feats if applicable.\n" +
-                            " - Viable Feats: Token, Phase, Battalions, Challenges, and Cutthroat. \n" +
-                            " - usage: !FarmCheckpoint [activity shorthand (!activities)] [(optional)master] [(optional)feats:feat1name,feat2name,etc...] [single word name for the checkpoint of your choosing. a-z, 0-9 only]  BungieUsername#0000 \n" +
-                            " - example: !FarmCheckpoint EQ feats:tokenlimit,phaselimit shockyhands ItAvvy#7006");
-                        done = true;
-                        return;
-                    case "endfarm":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !EndFarm: \n" +
-                            " - I'll stop farming the given activity and shift into idle mode. I will then ask for you to run !verify to verify that you do in fact want to end the farm.\n" +
-                            " - Usage: !EndFarm");
-                        done = true;
-                        return;
-                    case "forcewipe":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ForceWipe: \n" +
-                            " - If applicable, I'll fire a rocket at the ground to force a wipe.\n" +
-                            " - usage: !ForceWipe");
-                        done = true;
-                        return;
-                    case "help":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !Help: \n" +
-                            " - Why are you asking for help with the \"help\" command???\n" +
-                            " - usage: !Help [command name]");
-                        done = true;
-                        return;
-                    case "forceorbit":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ForceOrbit\n" +
-                            " - Has me attempt to change characters thru the settings menu, to rescue myself from a softlock of some kind. May not always work. At which point I will forget everything I was doing, and will need to be set back up for farms and stuff.\n" +
-                            " - I will ask for confirmation twice before doing this.\n" +
-                            " - Usage: !ForceOrbit");
-                        done = true;
-                        return;
-                    case "transfercheckpoint":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !TransferCheckpoint \n" +
-                            " - Has me load into a checkpoint only a single time after someone joins my lobby, so that I may transfer the checkpoint to them, and then I'll return to idle.\n" +
-                            " - Usage: !TransferCheckpoint [activity shorthand(!activities)] [(optional)master] [single word name given to the checkpoint.  a-z, 0-9 only] BungieUsername#0000");
-                        done = true;
-                        return;
-                    case "flyincheckpointtransfer":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !FlyInCheckpointTransfer\n" +
-                            " - Transfers a checkpoint from you, to me, the hard way without using a darkness zone.\n" +
-                            " - Warning, this requires a bit of cooperation, and will only work if your fireteam is set to open.\n" +
-                            " - First, navigate on your director to the activity that has the checkpoint you want to transfer on it, and wait in orbit. Then run this command.\n" +
-                            " - After you run the command I will attempt to join on you.\n" +
-                            " - Then, I'll ask you to launch the activity, open your inventory, navigate to \"change character\" in your settings, click it, and then have you wait to confirm.\n" +
-                            " - Once my screen goes black, I'll send a chat message telling you to hit confirm to change characters.\n" +
-                            " - Once I'm boots on the ground I will return to orbit, verify that I do have the checkpoint, and echo the result here.\n" +
-                            " - Usage: !flyincheckpointtransfer [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint.  a-z, 1-9 only] BungieUsername#0000");
-                        done = true;
-                        return;
-                    case "cleancheckpoints":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !CleanCheckpoints\n" +
-                            " - I will go thru, activity by activity, both normal and master and delete any erronious checkpoints I may have that I don't have record of.\n" +
-                            " - This does require you to verify that you want to do it beforehand, as it takes about 30 minutes to go thru everything.\n" +
-                            " - Usage: !CleanCheckpoints");
-                        done = true;
-                        return;
-                    case "forcerestart":
-                        client.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ForceRestart\n" +
-                            " - I will first verify you want to do this. Twice.\n" +
-                            " - After verifying, I will kill the d2 process, and then restart myself to have a \"blank slate\" so to speak, and to unstuck myself.\n" +
-                            " - This __DOES NOT__ delete any checkpoints.\n" +
-                            " - Usage: !ForceRestart");
-                        done = true;
-                        return;
-                }
-                if (!done)
-                {
-                    client.Rest.SendMessageAsync(message.ChannelId,
-                        "The command you asked about doesn't seem to exist.\nPlease verify your spelling and try again or use the !ListCommands command.");
-                }
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            }
-        }  
-
         private static async void CommandTransferCheckpoint(Message message) 
         {
             new Thread(() =>
@@ -2422,7 +2284,7 @@ namespace TnTCheckpoint
                 if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
                 int namestartindex = 3;
 
-                if (messagechunks[2].ToLower() == "master")
+                if (messagechunks[2].ToLower() == "master"|| messagechunks[2].ToLower() == "m")
                 {
                     namestartindex = 4;
                     checkpointname = messagechunks[3];
@@ -2575,7 +2437,415 @@ namespace TnTCheckpoint
                 UpdateStatusBar("Idle...", UserStatusType.Online);
 
             }).Start();
-        }  
+        }
+
+        private static async void CommandLaunchAndHold(Message message)
+        {
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+
+                //make sure reset hasnt happened yet.
+                if (checkreset())
+                {
+                    initializing = true;
+                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
+                    InitializeCheckpoints();
+                    GetToDirectorForActivityCoords();
+                    CleanCheckpoints();
+                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
+
+                    initializing = false;
+                    return;
+                }
+
+                while (afkcycle)
+                {
+                }
+
+                if (!oncharselect)
+                {
+                    if (transferingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (holdingload)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (checkpointfarmmode)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (grabbingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (deletingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
+                    return;
+                }
+
+                statusheader = "!TransferAndHold command:";
+                statussubtext = "Making sure the command is viable";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!TransferAndHold... Making sure the command is viable.", UserStatusType.Idle);
+
+                transferingcheckpoint = true;
+                client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
+
+                //parse command text
+                //!TransferCheckpoint [activity shorthand(!activities)] [(optional)master] [single word name given to the checkpoint. a-z, 1-9 only] BungieUsername#0000
+
+                string[] messagechunks = message.Content.Split(" ");
+
+                if (messagechunks.Length < 4)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!TransferAndHold\" command.\nTry \"!help TransferAndHold\" to learn how to use it.");
+                    transferingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                string[] nameID = messagechunks.Last().Split("#");
+                if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!TransferAndHold\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help TransferAndHold\" to learn how to use it.");
+                    transferingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                string activity = messagechunks[1].ToUpper();
+                string activitykey = activity;
+
+                string[] keys = checkpoints.Keys.ToArray();
+                if (!keys.Contains(activity))
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help TransferAndHold\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                    transferingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+                bool master = false;
+                string ckpointname = messagechunks[2];
+
+                workingdiscordname = message.Author.Username;
+                if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
+                int namestartindex = 3;
+
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
+                {
+                    namestartindex = 4;
+                    checkpointname = messagechunks[3];
+                    master = true;
+                    if (!keys.Contains("master" + activity))
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help TransferAndHold\" to learn how to use this command.");
+                        transferingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    else
+                    {
+                        activitykey = "master" + activity;
+                        ckpointname = messagechunks[3];
+                    }
+                }
+                workingusername = "";
+                for (int i = namestartindex; i < messagechunks.Length; i++)
+                {
+                    if (workingusername == "") workingusername = workingusername + messagechunks[i];
+                    else workingusername = workingusername + " " + messagechunks[i];
+                }
+
+                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                ckpointname = rgx.Replace(ckpointname, "");
+
+                int charslot = 0;
+                if (checkpoints[activitykey].Keys.Contains(ckpointname))
+                {
+                    charslot = checkpoints[activitykey][ckpointname];
+                }
+                else
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "I don't currently have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help TransferAndHold\" to learn how to use this command, or \"!TransferAndHold\" to see what checkpoints I have.");
+                    transferingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                SelectChar(charslot);
+                SelectDirector();
+                SelectPortal();
+                SelectActivity(activity);
+                if (master) SelectMaster();
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Sending an invite to " + workingusername + ". If I don't see someone join in the next 5 minutes I will return to idle mode.");
+                InvitePlayer("/invite " + workingusername);
+
+                statussubtext = "Invite sent. Waiting for player to join.";
+                UpdateTextDisplay();
+
+                Point pointcheck = ConvertAspectRatioCoords(95.859, 83.75);
+                Point pointclick = ConvertAspectRatioCoords(75.117, 83.75);
+
+                SetCursorPos(pointclick.X, pointclick.Y);
+
+                Task.Delay(1000).Wait();
+
+                Color spotcolor = GetColorAt(pointcheck);
+
+                bool change = false;
+
+                DateTime time = DateTime.Now.AddMinutes(5);
+                statussubtext = "Comparing red values to see launch button go red.";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!TransferAndHold... Waiting for " + workingusername + " to join.", UserStatusType.Idle);
+
+                while (!change)
+                {
+                    Color spotcolor2 = GetColorAt(pointcheck);
+
+                    if (Math.Abs(spotcolor.G - spotcolor2.G) > 60)
+                    {
+                        if (spotcolor2.G != 0) change = true;
+                    }
+
+                    if (DateTime.Now > time)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "Nobody joined. Returning to orbit.");
+
+                        transferingcheckpoint = false;
+                        ReturnToCharSelectFast();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    Task.Delay(101).Wait();
+                }
+
+                statussubtext = "Button went red. Waiting for it to go back.";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!TransferAndHold... Detected join, Launching momentarily.", UserStatusType.Idle);
+
+                AwaitColorChange(95.859, 83.75, 1);
+
+                statussubtext = "Join detected. Launching activity.";
+                UpdateTextDisplay();
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Launching activity...");
+
+                Task.Delay(2000).Wait();
+
+                change = false;
+
+                while (!change)
+                {
+                    Color spotcolor2 = GetColorAt(pointcheck);
+
+                    if (Math.Abs(spotcolor.G - spotcolor2.G) > 80)
+                    {
+                        if (spotcolor2.G != 0) change = true;
+                    }
+
+                    SendClick(pointclick);
+
+                    Task.Delay(250).Wait();
+                }
+
+                statussubtext = "Awaiting first black screen.";
+                UpdateTextDisplay();
+
+                Task.Delay(3000).Wait();
+
+                DateTime bailout = DateTime.Now.AddSeconds(30);
+
+                while (!CheckBlackScreen())
+                {
+                    if (DateTime.Now > bailout) break;
+                    Task.Delay(30).Wait();
+                }
+                while (CheckBlackScreen())
+                {
+                    Task.Delay(30).Wait();
+                }
+                AwaitColorChange(3, 3, 1); //come out of black screen
+
+                bailout = DateTime.Now.AddSeconds(65);
+
+                if (activity != "RON" & activity != "PR")
+                {
+
+                    statussubtext = "Waiting for second black screen...";
+                    UpdateTextDisplay();
+
+                    while (!CheckBlackScreen()) //wait until on next black screen
+                    {
+                        if (DateTime.Now > bailout) break;
+                        Task.Delay(30).Wait();
+                    }
+
+                    while (CheckBlackScreen())//black screen found, wait for it to go away
+                    {
+                        Task.Delay(30).Wait();
+                    }
+
+                    if (DateTime.Now < bailout) AwaitColorChange(90, 90, 1); //come out of black screen, boots on ground
+
+                }
+
+                Task.Delay(3000).Wait();
+
+                statussubtext = "Now boots on ground...";
+                UpdateTextDisplay();
+
+                bootsonground = true;
+
+                holdingload = true;
+
+                UpdateStatusBar("!TransferAndHold... Currently holding load for " + workingdiscordname + ". Run !endhold to stop.", UserStatusType.Idle);
+                statusheader = "!TransferAndHold command:";
+                statussubtext = "Boots on ground. Going to AFK macro.";
+                UpdateTextDisplay();
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!endhold\" when you want me to stop.");
+
+                Task.Delay(10000).Wait();
+
+                //navigate to collections
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(101).Wait();
+                //start, lb, lb, click lore tab
+                _controller.SetButtonState(Xbox360Button.Start, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.Start, false);
+                Task.Delay(101).Wait();
+                _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
+                Task.Delay(1000).Wait();
+
+                _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                Task.Delay(400).Wait();
+                _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
+                Task.Delay(101).Wait();
+
+                _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                Task.Delay(1000).Wait();
+
+                SendClick(new Point(0, 0));
+                Task.Delay(1000).Wait();
+                SetCursorPos(ConvertAspectRatioCoords(68.395375, 60).X, ConvertAspectRatioCoords(68.395375, 60).Y);
+                Task.Delay(1000).Wait();
+
+                _controller.SetButtonState(Xbox360Button.A, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.A, false);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.A, true);
+                Task.Delay(101).Wait();
+                _controller.SetButtonState(Xbox360Button.A, false);
+                Task.Delay(101).Wait();
+
+                while (holdingload)
+                {
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                    Task.Delay(3000).Wait();
+                    if (!holdingload) break;
+
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                    Task.Delay(3000).Wait();
+                    if (!holdingload) break;
+
+                    SendClick(new Point(50, 50));
+
+                    InvitePlayer("/invite " + workingusername);
+                    Task.Delay(2000).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                    Task.Delay(10000).Wait();
+                }
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Endhold command processed. Returning to orbit...");
+
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(200).Wait();
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(500).Wait();
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(200).Wait();
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(500).Wait();
+                _controller.SetButtonState(Xbox360Button.B, true);
+                Task.Delay(200).Wait();
+                _controller.SetButtonState(Xbox360Button.B, false);
+                Task.Delay(500).Wait();
+
+                transferingcheckpoint = false;
+
+                ReturnToCharSelectFast();
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Idling...");
+
+                UpdateStatusBar("Idle...", UserStatusType.Online);
+            }).Start();
+        }
 
         private static async void CommandWipe(Message message) 
         {
@@ -2785,7 +3055,7 @@ namespace TnTCheckpoint
                 if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
                 int namestartindex = 3;
 
-                if (messagechunks[2].ToLower() == "master")
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
                 {
                     namestartindex = 4;
                     ckpointname = messagechunks[3];
@@ -3277,7 +3547,7 @@ namespace TnTCheckpoint
                 if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
                 int namestartindex = 3;
 
-                if (messagechunks[2].ToLower() == "master")
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
                 {
                     namestartindex = 4;
                     checkpointname = messagechunks[3];
@@ -3735,7 +4005,7 @@ namespace TnTCheckpoint
                 if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
                 int namestartindex = 3;
 
-                if (messagechunks[2].ToLower() == "master")
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
                 {
                     namestartindex = 4;
                     ckpointname = messagechunks[3];
@@ -3926,7 +4196,434 @@ namespace TnTCheckpoint
                     UpdateStatusBar("Idle...", UserStatusType.Online);
                 }
             }).Start();
-        } 
+        }
+
+        private static async void CommandGrabCheckpointAndConfirm(Message message)
+        {
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+
+                //make sure reset hasnt happened yet.
+                if (checkreset())
+                {
+                    initializing = true;
+                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");
+                    InitializeCheckpoints();
+                    GetToDirectorForActivityCoords();
+                    CleanCheckpoints();
+                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now done cleaning up post-reset, and I'm funcitonal again now.");
+
+                    initializing = false;
+                    return;
+                }
+
+                while (afkcycle)
+                {
+                }
+
+                if (!oncharselect)
+                {
+                    if (transferingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm transferring a checkpoint for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (holdingload)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently holding a load for " + workingdiscordname + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (checkpointfarmmode)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently helping " + workingdiscordname + " farm " + activityname + " - " + checkpointname + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
+                        return;
+                    }
+                    if (grabbingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently grabbing a checkpoint from " + workingdiscordname + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (deletingcheckpoint)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    if (cleaningcheckpoints)
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
+                        return;
+                    }
+                    client.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
+                    return;
+                }
+
+                statusheader = "!GrabCheckpointAndConfirm command:";
+                statussubtext = "Making sure the command is viable";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!GrabCheckpointAndConfirm... Validating command.", UserStatusType.Idle);
+
+                grabbingcheckpoint = true;
+
+                //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
+                string[] messagechunks = message.Content.Split(" ");
+                //!GrabCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000
+                if (messagechunks.Length < 4)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Improper use of the \"!GrabCheckpointAndConfirm\" command.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use it.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                string[] nameID = messagechunks.Last().Split("#");
+                if (nameID.Length == 1 || nameID.Last().Split('#').Last().Length != 4)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "For the \"!GrabCheckpointAndConfirm\" command to work, I need the 4 number hashtag after your guardians name.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use it.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                string activity = messagechunks[1].ToUpper();
+                string activitykey = activity;
+
+                string[] keys = checkpoints.Keys.ToArray();
+                if (!keys.Contains(activity))
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "I appear to not know what activity " + activity + " is.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use this command, or \"!activities\" to see what activities are available.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+                bool master = false;
+                string ckpointname = messagechunks[2];
+
+                workingdiscordname = message.Author.Username;
+                if (message.Author.GlobalName != null) workingdiscordname = message.Author.GlobalName;
+                int namestartindex = 3;
+
+                if (messagechunks[2].ToLower() == "master" || messagechunks[2].ToLower() == "m")
+                {
+                    namestartindex = 4;
+                    ckpointname = messagechunks[3];
+                    master = true;
+                    if (!keys.Contains("master" + activity))
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "That activity doesn't appear to have a master mode.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use this command.");
+                        grabbingcheckpoint = false;
+
+                        statusheader = "Idle...";
+                        statussubtext = "";
+                        UpdateTextDisplay();
+
+                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                        return;
+                    }
+                    else
+                    {
+                        activitykey = "master" + activity;
+                    }
+                }
+
+                workingusername = "";
+                for (int i = namestartindex; i < messagechunks.Length; i++)
+                {
+                    if (workingusername == "") workingusername = workingusername + messagechunks[i];
+                    else workingusername = workingusername + " " + messagechunks[i];
+                }
+
+                Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+                ckpointname = rgx.Replace(ckpointname, "");
+
+                int charslot = 0;
+                if (checkpoints[activitykey].Keys.Contains(ckpointname))
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "I already have a checkpoint with the name " + ckpointname + " in my save data.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use this command.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+                if (checkpoints[activitykey].Keys.Count == 3)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "I already have 3 checkpoints for that activity in my record.\nTry \"!help deletecheckpoint\" to learn how to delete a checkpoint so that you may overwrite it, and \"!listcheckpoints\" to see what checkpoints I have.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+                else
+                {
+                    charslot = 1;
+                    //charslot = checkpoints[activitykey].Count + 1;
+                    foreach (string tk in checkpoints[activitykey].Keys)
+                    {
+                        if (checkpoints[activitykey][tk] == 1) charslot = 2;
+                        if (checkpoints[activitykey][tk] == 2) charslot = 3;
+                    }
+                }
+
+                if (ckpointname == "")
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Somehow you've managed to give me a checkpoint name that when filtered for only numbers and letters is an empty string.\nTry \"!help GrabCheckpointAndConfirm\" to learn how to use this command.");
+                    grabbingcheckpoint = false;
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                    return;
+                }
+
+                //activity for the activity name (shorthand + master)
+                //charslot for which character the checkpoint is stored on.
+                //master (bool) to know if its master mode or not
+
+                statusheader = "!GrabCheckpointAndConfirm command:";
+                statussubtext = "Attempting to join...";
+                UpdateTextDisplay();
+
+                UpdateStatusBar("!GrabCheckpointAndConfirm... Attempting to join " + workingusername + ".", UserStatusType.Idle);
+
+                client.Rest.SendMessageAsync(message.ChannelId, "Attempting to join...");
+                SelectChar(charslot);
+                bool worked = JoinFireteamFromOrbit("/join " + workingusername, activity);
+                if (!worked)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
+                    grabbingcheckpoint = false;
+
+                    int width = d2window.Right - d2window.Left;
+                    int height = d2window.Bottom - d2window.Top;
+                    int iconwidth = (int)Math.Round(width * 0.073125);
+                    int iconheight = (int)Math.Round(height * 0.04362);
+                    Point startcoords = ConvertAspectRatioCoords(34.3125, 49.625);
+                    int xpos = startcoords.X;
+                    int ypos = startcoords.Y;
+
+                    Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    Graphics g = Graphics.FromImage(bmpScreenshot);
+                    g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+                    bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
+
+                    Task.Delay(1000).Wait();
+
+                    string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
+
+                    if (ocrstring != "")
+                    {
+                        //make sure im in controller mode
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(101).Wait();
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(101).Wait();
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(101).Wait();
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(101).Wait();
+
+                        _controller.SetButtonState(Xbox360Button.B, true);
+                        Task.Delay(101).Wait();
+                        _controller.SetButtonState(Xbox360Button.B, false);
+                        Task.Delay(101).Wait();
+                    }
+
+                    ReturnToCharSelectFast();
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                }
+                else
+                {
+                    //make sure its not an error code please TODO - not sure how to synthesize an error code here honestly.
+
+                    //wait for wipe and then return to orbit
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now pretty sure I'm boots on ground. Let me know when to leave with \"!endhold\".");
+
+                    holdingload = true;
+
+                    Task.Delay(10000).Wait();
+
+                    //navigate to collections
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    Task.Delay(101).Wait();
+                    //start, lb, lb, click lore tab
+                    _controller.SetButtonState(Xbox360Button.Start, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.Start, false);
+                    Task.Delay(101).Wait();
+                    _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_BACK);
+                    Task.Delay(1000).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                    Task.Delay(400).Wait();
+                    _controller.SetAxisValue(Xbox360Axis.LeftThumbY, STICK_CENTER);
+                    Task.Delay(101).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                    Task.Delay(1000).Wait();
+
+                    SendClick(new Point(0, 0));
+                    Task.Delay(1000).Wait();
+                    SetCursorPos(ConvertAspectRatioCoords(68.395375, 60).X, ConvertAspectRatioCoords(68.395375, 60).Y);
+                    Task.Delay(1000).Wait();
+
+                    _controller.SetButtonState(Xbox360Button.A, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.A, false);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.A, true);
+                    Task.Delay(101).Wait();
+                    _controller.SetButtonState(Xbox360Button.A, false);
+                    Task.Delay(101).Wait();
+
+                    while (holdingload)
+                    {
+                        _controller.SetButtonState(Xbox360Button.LeftShoulder, true);
+                        Task.Delay(200).Wait();
+                        _controller.SetButtonState(Xbox360Button.LeftShoulder, false);
+                        Task.Delay(3000).Wait();
+                        if (!holdingload) break;
+
+                        _controller.SetButtonState(Xbox360Button.RightShoulder, true);
+                        Task.Delay(200).Wait();
+                        _controller.SetButtonState(Xbox360Button.RightShoulder, false);
+                        Task.Delay(3000).Wait();
+                        if (!holdingload) break;
+
+                        SendClick(new Point(50, 50));
+
+                        InvitePlayer("/invite " + workingusername);
+                        Task.Delay(2000).Wait();
+
+                        _controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(200).Wait();
+                        _controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(10000).Wait();
+                    }
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "Endhold command processed. Returning to orbit...");
+
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    Task.Delay(500).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+                    Task.Delay(500).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, true);
+                    Task.Delay(200).Wait();
+                    _controller.SetButtonState(Xbox360Button.B, false);
+
+                    Task.Delay(500).Wait(); UpdateStatusBar("!GrabCheckpointAndConfirm: Making sure the checkpoint saved correctly.", UserStatusType.Idle);
+
+                    statusheader = "!GrabCheckpointAndConfirm command:";
+                    statussubtext = "Boots on ground. Returning to orbit.";
+                    UpdateTextDisplay();
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "I'm now double checking to make sure the checkpoint saved correctly.");
+
+                    //return to char select, then see if the checkpoint saved.
+                    ReturnToCharSelectFast();
+                    SelectChar(charslot);
+                    SelectDirector();
+                    SelectPortal();
+                    Task.Delay(400).Wait();
+
+                    SelectActivity(activity);
+                    if (master) SelectMaster();
+
+                    Task.Delay(2000).Wait();
+
+                    //highlight over the play button just to have a consistent location for the checkpoint on screen.
+                    SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
+
+                    Task.Delay(1000).Wait();
+
+                    Color checkpoint = GetColorAt(ConvertAspectRatioCoords(66.640625, 77.0138889));
+
+                    int avg = checkpoint.R + checkpoint.G + checkpoint.B;
+                    avg = avg / 3;
+
+                    List<int> colorlist = new List<int>();
+                    colorlist.Add(checkpoint.R);
+                    colorlist.Add(checkpoint.G);
+                    colorlist.Add(checkpoint.B);
+                    colorlist.Sort();
+                    int gap = colorlist.Last() - colorlist.First();
+
+                    if (avg > 200 & gap < 10) //making sure its some level of white
+                    {
+                        //i got the checkpoint
+                        checkpoints[activitykey].Add(ckpointname, charslot);
+                        savecheckpoints();
+                        client.Rest.SendMessageAsync(message.ChannelId, "Checkpoint grabbed successfully. Returning to orbit.");
+                    }
+                    else
+                    {
+                        client.Rest.SendMessageAsync(message.ChannelId, "It looks like the checkpoint failed to grab. Please try the command again or use a different method of getting a checkpoint.");
+                    }
+
+                    grabbingcheckpoint = false;
+                    bootsonground = false;
+                    ReturnToCharSelectFast();
+
+                    statusheader = "Idle...";
+                    statussubtext = "";
+                    UpdateTextDisplay();
+
+                    UpdateStatusBar("Idle...", UserStatusType.Online);
+
+                    client.Rest.SendMessageAsync(message.ChannelId, "GrabCheckpointAndConfirm complete. Back to idling...");
+                }
+            }).Start();
+        }
 
         private static async void CommandActivities(Message message)
         {
@@ -3972,6 +4669,7 @@ namespace TnTCheckpoint
                 " - **!EndHold:** Stops me holding a load.\n" +
                 " - **!GrabCheckpoint:** Has me join on the username given with the command, and then wait for a wipe so that I have the checkpoint, at which point I'll then return to orbit and idle.\n" +
                 " - **!ForceWipe:** If applicable, I'll fire a rocket at the ground to force a wipe.\n" +
+                " - **!LaunchAndHold:** I'll launch a checkpoint and afk on the ground, occasionally attempting to send an invite to the author so that people may grab bonus chests from a checkpoint.\n" +
                 " - **!DeleteCheckpoint:** I'll delete a checkpoint so that it may be replaced with another.\n").Wait();
             client.Rest.SendMessageAsync(message.ChannelId,
                 " - **!ListCheckpoints:** Used to list what checkpoints I have. \n" +
@@ -3979,11 +4677,184 @@ namespace TnTCheckpoint
                 " - **!EndFarm:** I'll stop farming the given activity and shift into idle mode.\n" +
                 " - **!TransferCheckpoint:** Used to transfer a checkpoint from me to you.\n" +
                 " - **!FlyInCheckpointTransfer:** Allows giving checkpoints to me without the use of a darkness zone or wipe. warning: complicated.\n" +
+                " - **!GrabCheckpointAndConfirm:** I'll join on you and then afk until you tell me I should have a checkpoint. Then I'll check if I've aquired a new checkpoint once I bail and echo the results back.\n" +
                 " - **!CleanCheckpoints:** Takes half an hour, I'll go thru and clean out any vestigial checkpoints I have no memory of.\n" +
                 " - **!ForceRestart:** Shuts down the entire bot and restarts it. Useful if \"!ForceOrbit\" is bugging out.\n");
 
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        } 
+        }
+
+        private static async void CommandHelp(Message message)
+        {
+            //check if the command is run on its own with no arguments. if it is, run ListCommands.
+            //else, check if the command exists. if the command exists, give its specific description.
+            string[] parse = message.Content.Split(' ');
+            if (parse.Length == 1)
+            {
+                CommandListCommands(message);
+                return;
+            }
+            else
+            {
+                bool done = false;
+                switch (parse[1].ToLower().Replace("!", ""))
+                {
+                    case "listcommands":
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ListCommands:\n" +
+                            " - I'll list all available commands and shorthand definitions of them.\n" +
+                            " - Usage: !ListCommands\n");
+                        done = true;
+                        return;
+                    case "launchandhold":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !LaunchAndHold \n" +
+                            " - Has me load into a checkpoint and stay boots on the ground until the \"!endhold\" command is run. I will occasionally send invites to the person who ran the command so they may rejoin.\n" +
+                            " - Usage: !LaunchAndHold [activity shorthand(!activities)] [(optional)master] [single word name given to the checkpoint.  a-z, 0-9 only] BungieUsername#0000");
+                                done = true;
+                        return;
+                    case "activities":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                        "### !Activities\n" +
+                        " - I'll list all available activities.\n" +
+                        " - usage: !Activities\n");
+                        done = true;
+                        return;
+                    case "holdload":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                        "### !HoldLoad: \n" +
+                        " - I'll hold a load by joining on the person until the !EndHold command is run.\n" +
+                        " - usage: !HoldLoad BungieUsername#0000\n");
+                        done = true;
+                        return;
+                    case "endhold":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !EndHold: \n" +
+                            " - First I will confirm that you do want to end the hold, with !verify.\n" +
+                            " - After that, I'll return to orbit and enter idle mode.\n" +
+                            " - usage: !EndHold \n");
+                        done = true;
+                        return;
+                    case "grabcheckpoint":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !GrabCheckpoint: \n" +
+                            " - Has me join on the username given with the command, and then wait for a wipe so that I have the checkpoint, at which point I'll then return to orbit and idle.\n" +
+                            " - usage: !GrabCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000 \n" +
+                            " - example: !GrabCheckpoint WR ogre ItAvvy#7006\n" +
+                            " - If I already have a checkpoint in that activity on all 3 characters I will list them and ask you to delete one using !deletecheckpoint.");
+                        done = true;
+                        return;
+                    case "grabcheckpointandconfirm":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !GrabCheckpointAndConfirm: \n" +
+                            " - Has me join on the username given with the command, and then wait for confirmation that I should leave, at which point I'll then return to orbit and confirm that I got the checkpoint.\n" +
+                            " - When you're ready for me to go confirm that I have the checkpoint run the \"!endhold\" command.\n" +
+                            " - usage: !GrabCheckpointAndConfirm [activity shorthand (!activities)] [(optional)master] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000 \n" +
+                            " - example: !GrabCheckpointAndConfirm WR ogre ItAvvy#7006\n" +
+                            " - If I already have a checkpoint in that activity on all 3 characters I will list them and ask you to delete one using !deletecheckpoint.");
+                        done = true;
+                        return;
+                    case "deletecheckpoint":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !DeleteCheckpoint:\n" +
+                            " - I'll delete a checkpoint from a given activity with a given name so that a new checkpoint may be gotten on that character.\n" +
+                            " - usage: !DeleteCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint. a-z, 0-9 only] \n" +
+                            " - example: !DeleteCheckpoint WR master ogre");
+                        done = true;
+                        return;
+                    case "listcheckpoints":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ListCheckpoint: \n" +
+                            " - Lists out all checkpoints on a given activity, and specifies master in cases where its applicable.\n" +
+                            " - usage: !ListCheckpoint [activity shorthand (!activities)]\n" +
+                            " - use !ListCheckpoint All - to see all available checkpoints across all activities");
+                        done = true;
+                        return;
+                    case "farmcheckpoint":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !FarmCheckpoint: \n" +
+                            " - I'll load the character the given checkpoint is on, and I'll wait in orbit for you to join. The moment you join I'll launch the activity, transferring the checkpoint on load-in. Then, I will return to orbit to wait to launch again. Use !EndFarm to end the farm. If you specify feats with the optional modifier, I will try to launch the checkpoint with those feats if applicable.\n" +
+                            " - Viable Feats: Token, Phase, Battalions, Challenges, and Cutthroat. \n" +
+                            " - usage: !FarmCheckpoint [activity shorthand (!activities)] [(optional)master] [(optional)feats:feat1name,feat2name,etc...] [single word name for the checkpoint of your choosing. a-z, 0-9 only]  BungieUsername#0000 \n" +
+                            " - example: !FarmCheckpoint EQ feats:tokenlimit,phaselimit shockyhands ItAvvy#7006");
+                        done = true;
+                        return;
+                    case "endfarm":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !EndFarm: \n" +
+                            " - I'll stop farming the given activity and shift into idle mode. I will then ask for you to run !verify to verify that you do in fact want to end the farm.\n" +
+                            " - Usage: !EndFarm");
+                        done = true;
+                        return;
+                    case "forcewipe":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ForceWipe: \n" +
+                            " - If applicable, I'll fire a rocket at the ground to force a wipe.\n" +
+                            " - usage: !ForceWipe");
+                        done = true;
+                        return;
+                    case "help":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !Help: \n" +
+                            " - Why are you asking for help with the \"help\" command???\n" +
+                            " - usage: !Help [command name]");
+                        done = true;
+                        return;
+                    case "forceorbit":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ForceOrbit\n" +
+                            " - Has me attempt to change characters thru the settings menu, to rescue myself from a softlock of some kind. May not always work. At which point I will forget everything I was doing, and will need to be set back up for farms and stuff.\n" +
+                            " - I will ask for confirmation twice before doing this.\n" +
+                            " - Usage: !ForceOrbit");
+                        done = true;
+                        return;
+                    case "transfercheckpoint":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !TransferCheckpoint \n" +
+                            " - Has me load into a checkpoint only a single time after someone joins my lobby, so that I may transfer the checkpoint to them, and then I'll return to idle.\n" +
+                            " - Usage: !TransferCheckpoint [activity shorthand(!activities)] [(optional)master] [single word name given to the checkpoint.  a-z, 0-9 only] BungieUsername#0000");
+                        done = true;
+                        return;
+                    case "flyincheckpointtransfer":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !FlyInCheckpointTransfer\n" +
+                            " - Transfers a checkpoint from you, to me, the hard way without using a darkness zone.\n" +
+                            " - Warning, this requires a bit of cooperation, and will only work if your fireteam is set to open.\n" +
+                            " - First, navigate on your director to the activity that has the checkpoint you want to transfer on it, and wait in orbit. Then run this command.\n" +
+                            " - After you run the command I will attempt to join on you.\n" +
+                            " - Then, I'll ask you to launch the activity, open your inventory, navigate to \"change character\" in your settings, click it, and then have you wait to confirm.\n" +
+                            " - Once my screen goes black, I'll send a chat message telling you to hit confirm to change characters.\n" +
+                            " - Once I'm boots on the ground I will return to orbit, verify that I do have the checkpoint, and echo the result here.\n" +
+                            " - Usage: !flyincheckpointtransfer [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint.  a-z, 1-9 only] BungieUsername#0000");
+                        done = true;
+                        return;
+                    case "cleancheckpoints":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !CleanCheckpoints\n" +
+                            " - I will go thru, activity by activity, both normal and master and delete any erronious checkpoints I may have that I don't have record of.\n" +
+                            " - This does require you to verify that you want to do it beforehand, as it takes about 30 minutes to go thru everything.\n" +
+                            " - Usage: !CleanCheckpoints");
+                        done = true;
+                        return;
+                    case "forcerestart":
+                        client.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ForceRestart\n" +
+                            " - I will first verify you want to do this. Twice.\n" +
+                            " - After verifying, I will kill the d2 process, and then restart myself to have a \"blank slate\" so to speak, and to unstuck myself.\n" +
+                            " - This __DOES NOT__ delete any checkpoints.\n" +
+                            " - Usage: !ForceRestart");
+                        done = true;
+                        return;
+                }
+                if (!done)
+                {
+                    client.Rest.SendMessageAsync(message.ChannelId,
+                        "The command you asked about doesn't seem to exist.\nPlease verify your spelling and try again or use the !ListCommands command.");
+                }
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            }
+        }
 
         public static async void CommandGerbCheckpoint(Message message)
         {
@@ -3995,137 +4866,6 @@ namespace TnTCheckpoint
         #endregion 
 
         #region macros
-        public static void ReturnToCharSelectForceful()
-        {
-            statussubtext = "Return to orbit: Making sure I'm taking controller input.";
-            UpdateTextDisplay();
-
-            int width = d2window.Right - d2window.Left;
-            int height = d2window.Bottom - d2window.Top;
-
-            int iconwidth = (int)Math.Round(width * 0.071484);
-            int iconheight = (int)Math.Round(height * 0.025695);
-            Point startcoords = ConvertAspectRatioCoords(35.195, 49.375);
-            int xpos = startcoords.X;
-            int ypos = startcoords.Y;
-
-            statussubtext = "Return to orbit: Double checking I'm not already on character select.";
-            UpdateTextDisplay();
-
-            client.Rest.SendMessageAsync(ChannelID, "Attempting to get back to orbit... depending on what i was doing when this started I may need a few minutes to figure myself out.\n If you REALLY need to fix things, you can use \"!forcerestart\" to kill d2 and the bot, and restart both.");
-
-            int i = 0;
-            while (!CheckCharSelect())
-            {
-                Thread.Sleep(1000);
-                i++;
-                client.Rest.SendMessageAsync(ChannelID, "Beginning attempt " + i + "...");
-
-                //make sure im in controller mode
-                _controller.SetButtonState(Xbox360Button.RightThumb, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightThumb, false);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightThumb, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightThumb, false);
-
-                _controller.SetButtonState(Xbox360Button.Start, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.Start, false);
-                AwaitColorChange(95, 5, 1);
-                Thread.Sleep(2000);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                AwaitColorChange(95, 10, 1);
-                Thread.Sleep(300);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                AwaitColorChange(95, 10, 1);
-                Thread.Sleep(300);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                Thread.Sleep(1000);
-                _controller.SetButtonState(Xbox360Button.Down, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.Down, false);
-                Thread.Sleep(400);
-                _controller.SetButtonState(Xbox360Button.Down, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.Down, false);
-                Thread.Sleep(400);
-                _controller.SetButtonState(Xbox360Button.Down, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.Down, false);
-                Thread.Sleep(400);
-                _controller.SetButtonState(Xbox360Button.Down, true);
-                Thread.Sleep(101);
-                _controller.SetButtonState(Xbox360Button.Down, false);
-                Thread.Sleep(1000);
-
-
-                SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-                Thread.Sleep(101);
-                SetCursorPos(ConvertAspectRatioCoords(84.21, 23.26).X, ConvertAspectRatioCoords(84.21, 23.26).Y);
-                Thread.Sleep(101);
-
-                for (int j = 0; j < 4; j++)
-                {
-                    _controller.SetButtonState(Xbox360Button.A, true);
-                    Thread.Sleep(101);
-                    _controller.SetButtonState(Xbox360Button.A, false);
-                    Thread.Sleep(101);
-                }
-
-                Thread.Sleep(200);
-
-                bool madeit = false;
-
-                Thread waitcharsel = new Thread(() =>
-                {
-                    try
-                    {
-                        awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
-                        madeit = true;
-                    }
-                    catch
-                    {
-
-                    }
-                }
-                );
-
-                waitcharsel.Start();
-
-                DateTime kill = DateTime.Now.AddSeconds(30);
-
-                while (DateTime.Now < kill)
-                {
-                    if (madeit) break;
-                }
-
-                if (madeit)
-                {
-                    SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
-                    SendClick(ConvertAspectRatioCoords(50, 50));
-                    Thread.Sleep(1000);
-                }
-                else
-                {
-                    waitcharsel.Interrupt();
-                }
-            }
-
-            statusheader = "Idle...";
-            statussubtext = "";
-            UpdateTextDisplay();
-
-            oncharselect = true;
-        }
-
         public static void ReturnToCharSelectFast()
         {
             statussubtext = "Return to orbit fast: Making sure I'm taking controller input.";
@@ -4303,8 +5043,7 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.Down, true);
                     Task.Delay(101).Wait();
                     _controller.SetButtonState(Xbox360Button.Down, false);
-                    AwaitColorChange(50, 72, 1);
-                    Task.Delay(1600).Wait();
+                    Task.Delay(2000).Wait();
                 }
             }
             if (DungeonActivityOrder.Contains(act))
@@ -4313,8 +5052,7 @@ namespace TnTCheckpoint
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                AwaitColorChange(50, 72, 1);
-                Task.Delay(1500).Wait();
+                Task.Delay(2000).Wait();
 
                 if (DungeonActivityOrder.IndexOf(act) > 5)
                 {
@@ -4323,8 +5061,7 @@ namespace TnTCheckpoint
                     _controller.SetButtonState(Xbox360Button.Down, true);
                     Task.Delay(101).Wait();
                     _controller.SetButtonState(Xbox360Button.Down, false);
-                    AwaitColorChange(50, 72, 1);
-                    Task.Delay(1600).Wait();
+                    Task.Delay(2000).Wait();
                 }
             }
 
@@ -4334,13 +5071,11 @@ namespace TnTCheckpoint
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                AwaitColorChange(50, 72, 1);
-                Task.Delay(300).Wait();
+                Task.Delay(500).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, true);
                 Task.Delay(101).Wait();
                 _controller.SetButtonState(Xbox360Button.RightShoulder, false);
-                AwaitColorChange(50, 72, 1);
-                Task.Delay(1500).Wait();
+                Task.Delay(2000).Wait();
             }
 
             //flick to its location and click it.
