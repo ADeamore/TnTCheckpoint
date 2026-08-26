@@ -2299,7 +2299,7 @@ namespace TnTCheckpoint
                             " - Then, I'll ask you to launch the activity, open your inventory, navigate to \"change character\" in your settings, click it, and then have you wait to confirm.\n" +
                             " - Once my screen goes black, I'll send a chat message telling you to hit confirm to change characters.\n" +
                             " - Once I'm boots on the ground I will return to orbit, verify that I do have the checkpoint, and echo the result here.\n" +
-                            " - Usage: !TransferCheckpoint [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint.  a-z, 1-9 only] BungieUsername#0000");
+                            " - Usage: !flyincheckpointtransfer [activity shorthand (!activities)] [(optional)master] [single word name of the checkpoint.  a-z, 1-9 only] BungieUsername#0000");
                         done = true;
                         return;
                     case "cleancheckpoints":
