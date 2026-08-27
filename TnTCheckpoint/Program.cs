@@ -388,6 +388,7 @@ namespace TnTCheckpoint
                 Thread.CurrentThread.IsBackground = true;
                 //close button stuff.
                 string oldstatus = "";
+                afktimer = DateTime.Now.AddMinutes(55);
 
                 while (true)
                 {
