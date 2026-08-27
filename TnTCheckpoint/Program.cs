@@ -439,19 +439,22 @@ namespace TnTCheckpoint
                             }
 
                             //menu afk cycle
-                            if (oncharselect & !(checkpointfarmmode || holdingload || afkcycle || bootsonground || oncharselect || grabbingcheckpoint || cleaningcheckpoints))
+                            if (oncharselect)
                             {
                                 //currently running afk timer
                                 if (DateTime.Now > afktimer)
                                 {
-                                    UpdateStatusBar("AFK cycle", UserStatusType.DoNotDisturb);
-                                    afkcycle = true;
-                                    SelectChar(1);
-                                    Task.Delay(5000).Wait();
                                     afktimer = DateTime.Now.AddMinutes(55);
-                                    ReturnToCharSelectFast();
-                                    afkcycle = false;
-                                    UpdateStatusBar("Idle...", UserStatusType.Online);
+                                    new Thread(() =>
+                                    {
+                                        UpdateStatusBar("AFK cycle", UserStatusType.DoNotDisturb);
+                                        afkcycle = true;
+                                        SelectChar(1);
+                                        Task.Delay(5000).Wait();
+                                        ReturnToCharSelectFast();
+                                        afkcycle = false;
+                                        UpdateStatusBar("Idle...", UserStatusType.Online);
+                                    }).Start();
                                 }
                             }
                             else
