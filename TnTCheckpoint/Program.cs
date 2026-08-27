@@ -1749,10 +1749,6 @@ namespace TnTCheckpoint
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -1812,6 +1808,10 @@ namespace TnTCheckpoint
                 verifying = false;
                 cleaningcheckpoints = true;
 
+                while (afkcycle)
+                {
+                }
+
                 client.Rest.SendMessageAsync(message.ChannelId, "I'm now cleaning checkpoints. Estimated finish time is 30 minutes after this message.");
 
                 CleanCheckpoints();
@@ -1843,10 +1843,6 @@ namespace TnTCheckpoint
 
                     initializing = false;
                     return;
-                }
-
-                while (afkcycle)
-                {
                 }
 
                 if (!oncharselect)
@@ -1892,6 +1888,10 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!FlyInCheckpointTransfer... Making sure the command is viable.", UserStatusType.Idle);
 
                 grabbingcheckpoint = true;
+
+                while (afkcycle)
+                {
+                }
 
                 //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
                 string[] messagechunks = message.Content.Split(" ");
@@ -2184,10 +2184,6 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -2231,6 +2227,11 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!TransferCheckpoint... Making sure the command is viable.", UserStatusType.Idle);
 
                 transferingcheckpoint = true;
+
+                while (afkcycle)
+                {
+                }
+
                 client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
 
                 //parse command text
@@ -2463,10 +2464,6 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -2510,6 +2507,11 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!LaunchAndHold... Making sure the command is viable.", UserStatusType.Idle);
 
                 transferingcheckpoint = true;
+
+                while (afkcycle)
+                {
+                }
+
                 client.Rest.SendMessageAsync(message.ChannelId, "Making sure I have the checkpoint and everything is correct...");
 
                 //parse command text
@@ -2960,10 +2962,6 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -3007,6 +3005,10 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!FarmCheckpoint... Validating command.", UserStatusType.Idle);
 
                 checkpointfarmmode = true;
+
+                while (afkcycle)
+                {
+                }
 
                 //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
                 string[] messagechunks = message.Content.Split(" ");
@@ -3672,10 +3674,6 @@ namespace TnTCheckpoint
             {
                 Thread.CurrentThread.IsBackground = true;
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -3719,6 +3717,10 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!HoldLoad... Validating command.", UserStatusType.Idle);
 
                 holdingload = true;
+
+                while (afkcycle)
+                {
+                }
 
                 //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
                 string[] messagechunks = message.Content.Split(" ");
@@ -3908,10 +3910,6 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -3955,6 +3953,10 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!GrabCheckpoint... Validating command.", UserStatusType.Idle);
 
                 grabbingcheckpoint = true;
+
+                while (afkcycle)
+                {
+                }
 
                 //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
                 string[] messagechunks = message.Content.Split(" ");
@@ -4222,10 +4224,6 @@ namespace TnTCheckpoint
                     return;
                 }
 
-                while (afkcycle)
-                {
-                }
-
                 if (!oncharselect)
                 {
                     if (transferingcheckpoint)
@@ -4269,6 +4267,10 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!GrabCheckpointAndConfirm... Validating command.", UserStatusType.Idle);
 
                 grabbingcheckpoint = true;
+
+                while (afkcycle)
+                {
+                }
 
                 //figure out what character to grab the checkpoint on. if my checkpoints are full, bail.
                 string[] messagechunks = message.Content.Split(" ");
