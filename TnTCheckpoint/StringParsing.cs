@@ -244,7 +244,7 @@ namespace TnTCheckpoint
 
             if (!output.works) return output;
 
-            output.works = UsernameHashtagValid(commandname, messagechunks.Last().Split("#"));
+            if(shouldhavename) output.works = UsernameHashtagValid(commandname, messagechunks.Last().Split("#"));
             output.works = CheckActivityExists(commandname, messagechunks[1].ToUpper());
             if (!output.works) return output;
 
