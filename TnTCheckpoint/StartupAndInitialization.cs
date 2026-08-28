@@ -13,7 +13,7 @@ using WindowsInput.Native;
 using static TnTCheckpoint.ConstantsAndGlobals;
 using static TnTCheckpoint.DLLImportsStructsAndEnums;
 using static TnTCheckpoint.DebugCommunication;
-using static TnTCheckpoint.ScreenspaceInterationsAndReading;
+using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.CommandHandling;
 using static TnTCheckpoint.Macros;
 
