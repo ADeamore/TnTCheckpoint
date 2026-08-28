@@ -606,7 +606,7 @@ namespace TnTCheckpoint
 
                 DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!endhold\" when you want me to stop.");
 
-                Task.Delay(50000).Wait(); //this delay is to make sure I'm not a ghost when i do this.
+                Task.Delay(10000).Wait();
 
                 //navigate to collections to afk
                 VerifyControllerInput();
@@ -1242,7 +1242,7 @@ namespace TnTCheckpoint
 
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Now boots on the ground and holding the load. Remember to run \"!endhold\" when you want me to stop.");
 
-                    Task.Delay(50000).Wait();
+                    Task.Delay(10000).Wait();
 
                     VerifyControllerInput();
                     NavigateToCollections();
