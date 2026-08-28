@@ -866,7 +866,7 @@ namespace TnTCheckpoint
 
                     statussubtext = "Awaiting first black screen.";
                     UpdateTextDisplay();
-                    DateTime bailout = DateTime.Now.AddSeconds(15);
+                    DateTime bailout = DateTime.Now.AddSeconds(30);
                     while (!CheckBlackScreen())
                     {
                         if (DateTime.Now > bailout) break;
