@@ -82,9 +82,9 @@ namespace TnTCheckpoint
         {
             uint gox = (uint)point.X;
             uint goy = (uint)point.Y;
-            MouseEvent((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTDOWN, gox, goy, 0, 0);
             Task.Delay(101).Wait();
-            MouseEvent((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_LEFTUP, gox, goy, 0, 0);
         }
 
         public static Color GetColorAt(Point coordinates)
@@ -237,9 +237,9 @@ namespace TnTCheckpoint
         public static bool CheckCharSelect()
         {
             //make sure im in mnk mode
-            MouseEvent((uint)MouseEvents.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
             Task.Delay(101).Wait();
-            MouseEvent((uint)MouseEvents.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+            mouse_event((uint)MouseEvents.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
             Task.Delay(101).Wait();
 
             int width = d2window.Right - d2window.Left;

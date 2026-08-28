@@ -12,8 +12,9 @@ namespace TnTCheckpoint
         [DllImport("User32.Dll")]
         public static extern long SetCursorPos(int x, int y);
 
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-        public static extern void MouseEvent(
+        public static extern void mouse_event(
             [In] uint dwFlags,
             [In] uint dx,
             [In] uint dy,
@@ -27,6 +28,7 @@ namespace TnTCheckpoint
 
             public static bool IsPressed(int key) => (GetAsyncKeyState(key) & 0x8000) != 0;
         }
+
         public enum MouseEvents
         {
             MOUSEEVENTF_LEFTDOWN = 0x02,
