@@ -8,7 +8,7 @@ using static TnTCheckpoint.ConstantsAndGlobals;
 using static TnTCheckpoint.DebugCommunication;
 using static TnTCheckpoint.DLLImportsStructsAndEnums;
 using static TnTCheckpoint.Macros;
-using static TnTCheckpoint.ScreenspaceInterationsAndReading;
+using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.StartupAndInitialization;
 using static TnTCheckpoint.StringParsing;
 using Color = System.Drawing.Color;

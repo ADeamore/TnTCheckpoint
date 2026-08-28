@@ -10,7 +10,7 @@ using WindowsInput.Native;
 using static TnTCheckpoint.ConstantsAndGlobals;
 using static TnTCheckpoint.DebugCommunication;
 using static TnTCheckpoint.DLLImportsStructsAndEnums;
-using static TnTCheckpoint.ScreenspaceInterationsAndReading;
+using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.Bookkeeping;
 using Color = System.Drawing.Color;
 

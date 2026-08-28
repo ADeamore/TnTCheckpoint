@@ -13,7 +13,7 @@ using Color = System.Drawing.Color;
 
 namespace TnTCheckpoint
 {
-    public class ScreenspaceInterationsAndReading
+    public class ScreenspaceInteractionsAndReading
     {
 
         public static async void AwaitColorChange(double percentageposx, double percentageposy, int count)
