@@ -234,7 +234,7 @@ namespace TnTCheckpoint
                 statussubtext = "Waiting for character select...";
                 UpdateTextDisplay();
                 Task.Delay(1000).Wait();
-                awaittext("ExittoDesktop", ConvertAspectRatioCoords(5.15625, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                AwaitText("ExittoDesktop", ConvertAspectRatioCoords(5.15625, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
                 Task.Delay(1000).Wait();
 
                 InputSimulator sim = new InputSimulator();

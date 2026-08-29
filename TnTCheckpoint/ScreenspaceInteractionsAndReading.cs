@@ -157,7 +157,7 @@ namespace TnTCheckpoint
             return ocrtext;
         }
 
-        public static void awaittext(string inputtext, Point coordinatepointstart, Point coordinatepointend)
+        public static void AwaitText(string inputtext, Point coordinatepointstart, Point coordinatepointend)
         {
             string currenttext = "";
             bool match = false;

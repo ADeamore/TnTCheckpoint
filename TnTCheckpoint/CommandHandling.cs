@@ -733,7 +733,7 @@ namespace TnTCheckpoint
 
             Checkpoints[activitykey].Add(newname, slot);
             Checkpoints[activitykey].Remove(oldname);
-            savecheckpoints();
+            SaveCheckpoints();
 
             DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Successfully renamed " + oldname + " to " + newname + ".");
 
@@ -1090,10 +1090,10 @@ namespace TnTCheckpoint
                 NavigateToActivityFromCharSelect(charslot, output.activity, output.master);
 
                 UpdateStatusBar("!DeleteCheckpoint... Removing checkpoint.", UserStatusType.Idle);
-                removecheckpoint();
+                RemoveCheckpoint();
 
                 Checkpoints[output.activitykey].Remove(output.checkpointname);
-                savecheckpoints();
+                SaveCheckpoints();
 
                 UpdateStatusBar("!DeleteCheckpoint... Returning to character select...", UserStatusType.Idle);
                 DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Checkpoint deleted, I'm returning to orbit now.");
@@ -1372,7 +1372,7 @@ namespace TnTCheckpoint
                     UpdateTextDisplay();
                     UpdateStatusBar("!GrabCheckpoint... Awaiting wipe :3", UserStatusType.Idle);
 
-                    awaittext("lightfadesaway", ConvertAspectRatioCoords(30.98958333333, 9.25925925925926), ConvertAspectRatioCoords(66.927083333, 15.55555555555));
+                    AwaitText("lightfadesaway", ConvertAspectRatioCoords(30.98958333333, 9.25925925925926), ConvertAspectRatioCoords(66.927083333, 15.55555555555));
 
                     statusheader = "!GrabCheckpoint command:";
                     statussubtext = "Wipe screen found. Waiting for wipe screen to clear.";
@@ -1386,7 +1386,7 @@ namespace TnTCheckpoint
                     else DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Checkpoint " + output.checkpointname + " grabbed for master " + output.activity + " from " + WorkingUserName + ".\n Returning to orbit to idle.");
 
                     Checkpoints[output.activitykey].Add(output.checkpointname, charslot);
-                    savecheckpoints();
+                    SaveCheckpoints();
 
                     GRABBINGCHECKPOINT = false;
                     flagBootsOnGround = false;

@@ -62,7 +62,7 @@ namespace TnTCheckpoint
 
         public static bool DoubleCheckAndHandleReset()
         {
-            if (checkreset())
+            if (CheckReset())
             {
                 INITIALIZING = true;
                 DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Looks like I no longer have that checkpoint due to reset and need to clean everything up. Sorry for the inconvenience. I'm gonna be down for the next 30 minutes or so while I work this out.");

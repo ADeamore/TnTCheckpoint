@@ -6,7 +6,7 @@ namespace TnTCheckpoint
     public class Bookkeeping
     {
 
-        public static void savecheckpoints()
+        public static void SaveCheckpoints()
         {
             string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string output = "";
@@ -34,7 +34,7 @@ namespace TnTCheckpoint
             File.WriteAllText(path + "\\checkpoints.ini", output);
         }
 
-        public static bool checkreset()
+        public static bool CheckReset()
         {
             string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 

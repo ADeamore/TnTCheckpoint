@@ -75,7 +75,7 @@ namespace TnTCheckpoint
             }
 
             Task.Delay(200).Wait();
-            awaittext("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+            AwaitText("ExittoDesktop", ConvertAspectRatioCoords(0.5, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
             SetCursorPos(ConvertAspectRatioCoords(50, 50).X, ConvertAspectRatioCoords(50, 50).Y);
             SendClick(ConvertAspectRatioCoords(50, 50));
             Task.Delay(1000).Wait();
@@ -260,7 +260,7 @@ namespace TnTCheckpoint
         /// <summary>
         /// assumes you're already on the activity that has the checkpoint icon.
         /// </summary>
-        public static void removecheckpoint()
+        public static void RemoveCheckpoint()
         {
             //highlight over the play button just to have a consistent location for the checkpoint on screen.
             SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
@@ -617,7 +617,7 @@ namespace TnTCheckpoint
             {
                 //i got the checkpoint
                 Checkpoints[output.activitykey].Add(output.checkpointname, charslot);
-                savecheckpoints();
+                SaveCheckpoints();
                 DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Checkpoint grabbed successfully. Returning to orbit.");
                 return true;
             }
@@ -742,7 +742,7 @@ namespace TnTCheckpoint
                     if (activity.Contains("master")) SelectMaster();
                     SendClick(new Point(50, 50));
 
-                    removecheckpoint();
+                    RemoveCheckpoint();
                     Task.Delay(101).Wait();
 
                     Controller.SetButtonState(Xbox360Button.B, true);
