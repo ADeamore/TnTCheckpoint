@@ -598,6 +598,7 @@ namespace TnTCheckpoint
 
                 flagBootsOnGround = true;
                 HOLDINGLOAD = true;
+                TRANSFERINGCHECKPOINT = false;
 
                 UpdateStatusBar("!LaunchAndHold... Currently holding load for " + WorkingDiscordName + ". Run !endhold to stop.", UserStatusType.Idle);
                 statusheader = "!LaunchAndHold command:";
@@ -638,8 +639,6 @@ namespace TnTCheckpoint
                 Task.Delay(200).Wait();
                 Controller.SetButtonState(Xbox360Button.B, false);
                 Task.Delay(500).Wait();
-
-                TRANSFERINGCHECKPOINT = false;
 
                 ReturnToCharSelectFast();
 
@@ -1099,6 +1098,7 @@ namespace TnTCheckpoint
                 DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Checkpoint deleted, I'm returning to orbit now.");
 
                 ReturnToCharSelectFast();
+                DELETINGCHECKPOINT = false;
 
                 DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Idling...");
                 UpdateStatusBar("Idle...", UserStatusType.Online);
