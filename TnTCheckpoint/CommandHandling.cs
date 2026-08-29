@@ -749,7 +749,7 @@ namespace TnTCheckpoint
                 Thread.CurrentThread.IsBackground = true;
                 if (!FARMMODE)
                 {
-                    DiscordClient.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm currently running a farm. If I'm mistaken please run \"!Forceorbit\" to help me find where I am.");
+                    DiscordClient.Rest.SendMessageAsync(message.ChannelId, "I don't believe I'm currently running a farm. If I'm mistaken please run \"!ForceRestart\" to help me find where I am.");
                     return;
                 }
 
@@ -1715,14 +1715,6 @@ namespace TnTCheckpoint
                             "### !Help: \n" +
                             " - Why are you asking for help with the \"help\" command???\n" +
                             " - usage: !Help [command name]");
-                        done = true;
-                        return;
-                    case "forceorbit":
-                        DiscordClient.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ForceOrbit\n" +
-                            " - Has me attempt to change characters thru the settings menu, to rescue myself from a softlock of some kind. May not always work. At which point I will forget everything I was doing, and will need to be set back up for farms and stuff.\n" +
-                            " - I will ask for confirmation twice before doing this.\n" +
-                            " - Usage: !ForceOrbit");
                         done = true;
                         return;
                     case "transfercheckpoint":

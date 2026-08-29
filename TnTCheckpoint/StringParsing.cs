@@ -22,39 +22,39 @@ namespace TnTCheckpoint
         public static bool IsBusyWithOtherCommand()
         {
 
+            if (TRANSFERINGCHECKPOINT)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm transferring a checkpoint for " + WorkingDiscordName + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!ForceRestart\" depending on how mistaken I am.");
+                return true;
+            }
+            if (HOLDINGLOAD)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently holding a load for " + WorkingDiscordName + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!ForceRestart\" depending on how mistaken I am.");
+                return true;
+            }
+            if (FARMMODE)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently helping " + WorkingDiscordName + " farm " + WorkingActivityName + " - " + WorkingCheckpointName + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!ForceRestart\" depending on how mistaken I am.");
+                return true;
+            }
+            if (GRABBINGCHECKPOINT)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently grabbing a checkpoint from " + WorkingDiscordName + "\nIf I'm mistaken in this please run \"!ForceRestart\" to help me find my bearings.");
+                return true;
+            }
+            if (DELETINGCHECKPOINT)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!ForceRestart\" to help me find my bearings.");
+                return true;
+            }
+            if (CLEANINGCHECKPOINTS)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!ForceRestart\" to help me find my bearings.");
+                return true;
+            }
             if (!flagOnCharSelect)
             {
-                if (TRANSFERINGCHECKPOINT)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm transferring a checkpoint for " + WorkingDiscordName + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
-                    return true;
-                }
-                if (HOLDINGLOAD)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently holding a load for " + WorkingDiscordName + "\n" + "If I'm mistaken in this please run either \"!endhold\" or \"!forceorbit\" depending on how mistaken I am.");
-                    return true;
-                }
-                if (FARMMODE)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently helping " + WorkingDiscordName + " farm " + WorkingActivityName + " - " + WorkingCheckpointName + "\nIf I'm mistaken in this please run either \"!endfarm\" or \"!forceorbit\" depending on how mistaken I am.");
-                    return true;
-                }
-                if (GRABBINGCHECKPOINT)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently grabbing a checkpoint from " + WorkingDiscordName + "\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                    return true;
-                }
-                if (DELETINGCHECKPOINT)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently deleting a checkpoint. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                    return true;
-                }
-                if (CLEANINGCHECKPOINTS)
-                {
-                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm currently cleaning up my saved checkpoints. Please wait a moment.\nIf I'm mistaken in this please run \"!forceorbit\" to help me find my bearings.");
-                    return true;
-                }
-                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!forceorbit\" for me to rectify the situation.");
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I don't believe I'm in orbit right now.\nIf this is a mistake, please run \"!ForceRestart\" for me to rectify the situation.");
                 return true;
             }
             return false;

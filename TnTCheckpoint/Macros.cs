@@ -92,7 +92,7 @@ namespace TnTCheckpoint
         /// <param name="charslot"></param>
         public static async void SelectChar(int charslot)
         {
-            flagOnCharSelect = false;
+            if(!AFKCYCLE) flagOnCharSelect = false;
             int gap = (int)Math.Round((charslot - 1) * 10.278);
 
             statussubtext = "Selecting character...";
