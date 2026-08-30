@@ -670,9 +670,10 @@ namespace TnTCheckpoint
 
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Making sure im boots on the ground, so that I can wipe.");
                     //check if im boots on the ground. idk how yet. maybe trying to swap menus with dpad and seeing what happens?
-                    while (!flagBootsOnGround)
+                    if (!flagBootsOnGround)
                     {
-                        //add in a contengency to bail out if someone forces the bot to orbit.
+                        DiscordClient.Rest.SendMessageAsync(message.ChannelId, "I'm not boots on the ground right now. Please try again in a minute.");
+                        return;
                     }
                     //lmao explode.
 
@@ -861,7 +862,12 @@ namespace TnTCheckpoint
                     Task.Delay(1000).Wait();
                     if (!FARMMODE) break;
 
-                    WaitForPlayerJoinOrbit(DateTime.Now.AddMinutes(55));
+                    bool joined = WaitForPlayerJoinOrbit(DateTime.Now.AddMinutes(55));
+                    if (!joined)
+                    {
+                        FARMMODE = false;
+                        break;
+                    }
 
                     UpdateStatusBar("!FarmCheckpoint... Join detected, launching momentarily.", UserStatusType.Idle);
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Launching activity as soon as it lets me...");

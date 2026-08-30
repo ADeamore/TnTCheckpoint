@@ -333,7 +333,6 @@ namespace TnTCheckpoint
             Color spotcolor = GetColorAt(pointcheck);
             bool change = false;
 
-            DateTime time = DateTime.Now.AddMinutes(5);
             statussubtext = "Comparing red values to see launch button go red.";
             UpdateTextDisplay();
 
@@ -346,7 +345,7 @@ namespace TnTCheckpoint
                     if (spotcolor2.G != 0) change = true;
                 }
 
-                if (DateTime.Now > time)
+                if (DateTime.Now > timeout)
                 {
                     DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Nobody joined. Returning to orbit.");
 
