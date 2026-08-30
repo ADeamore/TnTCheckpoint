@@ -375,7 +375,7 @@ namespace TnTCheckpoint
             {
                 int index = str.IndexOf(checkpointname.ToLower());
                 string val = Checkpoints[activitykey].Keys.ToArray()[index];
-                return Checkpoints[activitykey][checkpointname];
+                return Checkpoints[activitykey][val];
             }
             else
             {
