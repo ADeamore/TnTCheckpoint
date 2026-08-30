@@ -165,6 +165,7 @@ namespace TnTCheckpoint
                 if (res == "") res = res + command[i];
                 else res = res + " " + command[i];
             }
+            WorkingUserName = res;
 
             return res;
         }
