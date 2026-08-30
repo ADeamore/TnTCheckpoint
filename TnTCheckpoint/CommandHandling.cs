@@ -431,9 +431,10 @@ namespace TnTCheckpoint
 
                     VerifyCheckpointAndSave(charslot, output);
 
+                    ReturnToCharSelectFast();
+
                     GRABBINGCHECKPOINT = false;
                     flagBootsOnGround = false;
-                    ReturnToCharSelectFast();
 
                     statusheader = "Idle...";
                     statussubtext = "";

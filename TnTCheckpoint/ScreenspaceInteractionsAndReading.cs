@@ -277,6 +277,7 @@ namespace TnTCheckpoint
                     Thread.Sleep(500);
 
                     ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+                    bmpScreenshot.Dispose();
                     works = true;
                 }
                 catch
