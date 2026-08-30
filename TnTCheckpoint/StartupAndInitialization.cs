@@ -541,6 +541,7 @@ namespace TnTCheckpoint
                 map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
                 string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
                 string output = ConvertOCRtoAbbreviation(ocrstring);
+                map.Dispose();
                 if (output == "fail")
                 {
                     good = false;
@@ -566,6 +567,7 @@ namespace TnTCheckpoint
                 map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
                 string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
                 string output = ConvertOCRtoAbbreviation(ocrstring);
+                map.Dispose();
                 if (output == "fail")
                 {
                     good = false;
@@ -591,6 +593,7 @@ namespace TnTCheckpoint
                 map.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
                 string ocrstring = GetText(map).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
                 string output = ConvertOCRtoAbbreviation(ocrstring);
+                map.Dispose();
                 if (output == "fail")
                 {
                     good = false;
