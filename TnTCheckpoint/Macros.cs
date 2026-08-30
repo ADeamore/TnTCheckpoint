@@ -48,7 +48,7 @@ namespace TnTCheckpoint
 
             Task.Delay(500).Wait();
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-            Task.Delay(1000).Wait();
+            Task.Delay(1000).Wait(); //todo figure out a way to actually detect the inventory here.
 
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X, selectpos.Y);
