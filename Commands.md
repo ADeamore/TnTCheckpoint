@@ -4,17 +4,17 @@
 # Giving checkpoints to the bot:
 ### GrabCheckpoint:
 The bot will join on the username given with the command and idle waiting for a wipe. When the bot detects a wipe screen it will then save the checkpoint and return to orbit.\
-Usage: !GrabCheckpoint [activity shorthand (!activities)] [(optional)master/m] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000
+Usage: !GrabCheckpoint [activity shorthand (!activities)] [(optional)master/m] [single word name for the checkpoint.] BungieUsername#0000
 
 ### GrabCheckpointAndConfirm:
 Same as the above command, however instead of verifying it's got the checkpoint via wipe screen it instead waits for the user to run the follow-up command "!endhold". At which point the bot will return to orbit and verify that it has the checkpoint before returning to character select and idling.\
-Usage: !GrabCheckpointAndConfirm [activity shorthand (!activities)] [(optional)master/m] [single word name for the checkpoint of your choosing.  a-z, 1-9 only] BungieUsername#0000
+Usage: !GrabCheckpointAndConfirm [activity shorthand (!activities)] [(optional)master/m] [single word name for the checkpoint.] BungieUsername#0000
 
 ### FlyInCheckpointTransfer:
 Uses a quark with flying into an activity and abandoning the lobby to transfer a checkpoint to the bot. Useful for transferring non-darkness zone checkpoints to the bot, though it doesn't always work.\
 The bot will join on the username given with the command and send a message in chat telling you when to launch. When you launch the activity you'll then be expected to navigate to your settings and find the "change character" button.\
 After this is done, the bot will then send a chat message telling you to change characters. Shortly after this the bot will return back to orbit and verify if it does, or doesn't have the checkpoint.\
-Usage: !flyincheckpointtransfer [activity shorthand (!activities)] [(optional)master/m] [single word name of the checkpoint.  a-z, 1-9 only] BungieUsername#0000
+Usage: !flyincheckpointtransfer [activity shorthand (!activities)] [(optional)master/m] [single word name of the checkpoint.] BungieUsername#0000
 
 # Administrative commands:
 ### Help:
