@@ -315,7 +315,13 @@ namespace TnTCheckpoint
 
         public static bool CheckOverlappingCheckpointName(string checkname, string activitykey, string commandname)
         {
-            if (Checkpoints[activitykey].Keys.Contains(checkname))
+            string[] str = Checkpoints[activitykey].Keys.ToArray();
+            for(int i = 0; i < str.Length; i++)
+            {
+                str[i] = str[i].ToLower();
+            }
+
+            if (str.Contains(checkname.ToLower()))
             {
                 DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I already have a checkpoint with the name " + checkname + " in my save data.\nTry \"!help "+ commandname + "\" to learn how to use this command.");
                 
@@ -359,8 +365,16 @@ namespace TnTCheckpoint
 
         public static int GetCharSlotOfCheckpoint(string activitykey,string checkpointname)
         {
-            if (Checkpoints[activitykey].Keys.Contains(checkpointname))
+            string[] str = Checkpoints[activitykey].Keys.ToArray();
+            for (int i = 0; i < str.Length; i++)
             {
+                str[i] = str[i].ToLower();
+            }
+
+            if (str.Contains(checkpointname.ToLower()))
+            {
+                int index = str.IndexOf(checkpointname.ToLower());
+                string val = Checkpoints[activitykey].Keys.ToArray()[index];
                 return Checkpoints[activitykey][checkpointname];
             }
             else
