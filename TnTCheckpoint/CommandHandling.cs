@@ -101,6 +101,10 @@ namespace TnTCheckpoint
                         done = true;
                         CommandCleanCheckpoints(message);
                         return;
+                    case "!listfeats":
+                        done = true;
+                        CommandListFeats(message);
+                        return;
                     case "!gerbcheckpoint":
                         done = true;
                         CommandGerbCheckpoint(message);
@@ -141,6 +145,10 @@ namespace TnTCheckpoint
                     case "!forcerestart":
                         done = true;
                         CommandForceRestart(message);
+                        return;
+                    case "!listfeats":
+                        done = true;
+                        CommandListFeats(message);
                         return;
                     case "!cancel":
                         VERIFYING = false;
@@ -1545,7 +1553,7 @@ namespace TnTCheckpoint
         {
             DiscordClient.Rest.SendMessageAsync(message.ChannelId, "## Raids:\n" +
                 " - CE (Crota's End) \n" +
-                " - DSC (Deep Stone Crypt \n" +
+                " - DSC (Deep Stone Crypt) \n" +
                 " - DPE (Desert Perpetual Epic) \n" +
                 " - DP (Desert Perpetual) \n" +
                 " - SE (Salvations Edge) \n" +
@@ -1573,6 +1581,17 @@ namespace TnTCheckpoint
                 " - GAUNTLET (Full 7 boss pantheon)");
         }
 
+        public static async void CommandListFeats(Message message)
+        {
+            //Token, Phase, Battalions, Challenges, and Cutthroat.
+            DiscordClient.Rest.SendMessageAsync(message.ChannelId, "## Feats:\n" +
+                " - Token (Token Limit) \n" +
+                " - Phase (Phase Limit) \n" +
+                " - Battalions \n" +
+                " - Challenges (Encounter Challenges) \n" +
+                " - Cutthroat (Cutthroat Combat)");
+        }
+
         public static async void CommandListCommands(Message message)
         {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -1589,6 +1608,7 @@ namespace TnTCheckpoint
                 " - **!DeleteCheckpoint:** I'll delete a checkpoint so that it may be replaced with another.\n").Wait();
             DiscordClient.Rest.SendMessageAsync(message.ChannelId,
                 " - **!ListCheckpoints:** Used to list what checkpoints I have. \n" +
+                " - **!ListFeats:** Used to list what feats are available. \n" +
                 " - **!FarmCheckpoint:** Used to target farm a specific encounter.\n" +
                 " - **!EndFarm:** I'll stop farming the given activity and shift into idle mode.\n" +
                 " - **!TransferCheckpoint:** Used to transfer a checkpoint from me to you.\n" +
@@ -1682,10 +1702,16 @@ namespace TnTCheckpoint
                         return;
                     case "listcheckpoints":
                         DiscordClient.Rest.SendMessageAsync(message.ChannelId,
-                            "### !ListCheckpoint: \n" +
-                            " - Lists out all checkpoints on a given activity, and specifies master in cases where its applicable.\n" +
-                            " - usage: !ListCheckpoint [activity shorthand (!activities)]\n" +
-                            " - use !ListCheckpoint All - to see all available checkpoints across all activities");
+                            "### !ListCheckpoints: \n" +
+                            " - Lists out all checkpoints, and specifies master in cases where its applicable.\n" +
+                            " - usage: !ListCheckpoints");
+                        done = true;
+                        return;
+                    case "listfeats":
+                        DiscordClient.Rest.SendMessageAsync(message.ChannelId,
+                            "### !ListFeats: \n" +
+                            " - Lists out all feats as I recognise them.\n" +
+                            " - usage: !ListFeats");
                         done = true;
                         return;
                     case "farmcheckpoint":

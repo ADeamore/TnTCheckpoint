@@ -3,6 +3,10 @@
 
 This is a bot initially designed specifically for my clans use. It requires a sacrificial windows PC, a sacrificial d2 account that has access to all activities, and a willingness to register a new bot with Discord.
 
+## You can see the full list of commands here:
+[Link](https://github.com/ADeamore/TnTCheckpoint/blob/master/Commands.md)
+
+
 ## Requirements to run:
 
 1. [.NET 10 sdk](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for runtimes
