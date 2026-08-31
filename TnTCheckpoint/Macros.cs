@@ -45,16 +45,14 @@ namespace TnTCheckpoint
             Controller.SetButtonState(Xbox360Button.Start, true);
             Task.Delay(101).Wait();
             Controller.SetButtonState(Xbox360Button.Start, false);
-            Task.Delay(101).Wait();
+
+            AwaitText("gearstats",ConvertAspectRatioCoords(83.75, 95.833333333), ConvertAspectRatioCoords(90, 98.81944444444)); //2144 1380, 2304 1420
+            
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-
-            AwaitText("gearstats",ConvertAspectRatioCoords(83.3203125, 95.833333333), ConvertAspectRatioCoords(90, 98.81944444444)); //2133 1380, 2304 1420
-
-            //Task.Delay(1000).Wait(); //figure out a way to actually detect the inventory here.
-
+            Task.Delay(101).Wait();
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(500).Wait();
+            Task.Delay(101).Wait();
             SendClick(selectpos);
 
             AwaitText("looksensitivity", ConvertAspectRatioCoords(30.0390625, 21.52777777), ConvertAspectRatioCoords(39.453125, 25)); //769 310, 1010 360
