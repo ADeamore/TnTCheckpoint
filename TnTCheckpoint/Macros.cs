@@ -54,7 +54,7 @@ namespace TnTCheckpoint
 
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101).Wait();
+            Task.Delay(500).Wait();
             SendClick(selectpos);
 
             AwaitText("looksensitivity", ConvertAspectRatioCoords(30.0390625, 21.52777777), ConvertAspectRatioCoords(39.453125, 25)); //769 310, 1010 360
