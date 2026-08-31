@@ -154,6 +154,8 @@ namespace TnTCheckpoint
                 }
             }
 
+            imgsource.Dispose();
+
             return ocrtext;
         }
 
