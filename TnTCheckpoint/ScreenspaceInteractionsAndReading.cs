@@ -172,23 +172,19 @@ namespace TnTCheckpoint
 
                 Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 Graphics g = Graphics.FromImage(bmpScreenshot);
-                Task.Delay(500).Wait();
 
                 g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
-                Task.Delay(500).Wait();
 
                 bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
                 bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
                 bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
                 bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
-                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());
-
-                Task.Delay(500).Wait();
+                bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect());;
 
                 string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
                 bmpScreenshot.Dispose();
 
-                Task.Delay(1000).Wait();
+                Task.Delay(33).Wait();
                 currenttext = ocrstring;
             }
         }
