@@ -48,16 +48,19 @@ namespace TnTCheckpoint
 
             AwaitText("gearstats",ConvertAspectRatioCoords(83.75, 95.833333333), ConvertAspectRatioCoords(90, 98.81944444444)); //2144 1380, 2304 1420
             
+            Task.Delay(101).Wait();
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
             Task.Delay(101).Wait();
+
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101).Wait();
+
+            Task.Delay(200).Wait();
             SendClick(selectpos);
 
             AwaitText("looksensitivity", ConvertAspectRatioCoords(30.0390625, 21.52777777), ConvertAspectRatioCoords(39.453125, 25)); //769 310, 1010 360
+            
             Task.Delay(101).Wait();
-
             selectpos = ConvertAspectRatioCoords(14.8046875, 63.75);
             SetCursorPos(selectpos.X, selectpos.Y);
             Task.Delay(101).Wait();
