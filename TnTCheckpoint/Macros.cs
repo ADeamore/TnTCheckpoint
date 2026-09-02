@@ -791,7 +791,7 @@ namespace TnTCheckpoint
                 Task.Delay(250).Wait();
             }
 
-            Task.Delay(2000).Wait();
+            Task.Delay(6000).Wait();
         }
 
         public static void VerifyControllerInput()
