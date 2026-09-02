@@ -63,7 +63,7 @@ namespace TnTCheckpoint
             Task.Delay(101).Wait();
             selectpos = ConvertAspectRatioCoords(14.8046875, 63.75);
             SetCursorPos(selectpos.X, selectpos.Y);
-            Task.Delay(101).Wait();
+            Task.Delay(200).Wait();
             SendClick(selectpos);
 
             AwaitText("changecharacter", ConvertAspectRatioCoords(79.609375, 21.5972222222), ConvertAspectRatioCoords(90.3515625, 24.722222)); //2038 311, 2313 356
