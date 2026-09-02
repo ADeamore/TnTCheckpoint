@@ -151,6 +151,31 @@ namespace TnTCheckpoint
                 else
                 {
                     //reset has happened, need to wipe everything, and save the new time.
+                    if (File.Exists(path + "\\checkpoints.ini"))
+                    {
+                        string output = File.ReadAllText(path + "\\checkpoints.ini");
+                        foreach (string raid in output.Split("-"))
+                        {
+                            string raidname = "";
+                            foreach (string checkpoint in raid.Split("~"))
+                            {
+                                if (raidname == "")
+                                {
+                                    raidname = checkpoint;
+                                }
+                                else
+                                {
+                                    if (NoResetActivities.Contains(raidname))
+                                    {
+                                        string cpname = checkpoint.Split(".")[0];
+                                        int cpindex = int.Parse(checkpoint.Split(".")[1]);
+                                        if (checkpoint != "") Checkpoints[raidname].Add(cpname, cpindex);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (File.Exists(path + "\\checkpoints.ini")) File.Delete(path + "\\checkpoints.ini");
                     if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
                     File.Delete(path + "\\resettimer.ini");

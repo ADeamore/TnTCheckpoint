@@ -67,6 +67,7 @@ namespace TnTCheckpoint
         public static bool runningupdatedetection = false;
 
         //recordkeeping for ingame names/activities/etc
+        public static string[] NoResetActivities = {"masterRON", "masterKF", "masterVOW", "masterGOTD", "masterWR", "masterSOTW", "masterD", "masterGOA"};
         public static List<string> RaidActivityOrder = new List<string>();
         public static List<string> DungeonActivityOrder = new List<string>();
         public static List<string> PantheonActivityOrder = new List<string>();
