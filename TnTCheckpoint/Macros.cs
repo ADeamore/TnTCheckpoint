@@ -782,24 +782,16 @@ namespace TnTCheckpoint
 
         public static void SpamLaunchButtonUntilWorks()
         {
-            bool change = false;
-            Point pointcheck = ConvertAspectRatioCoords(95.859, 83.75);
-            Color spotcolor = GetColorAt(pointcheck);
             Point pointclick = ConvertAspectRatioCoords(75.117, 83.75);
 
-            while (!change)
+            while(CheckText("launch",ConvertAspectRatioCoords(81.8359375, 81.5972222),ConvertAspectRatioCoords(89.53125, 85.0694444))) //2095 1175, 2292 1225
             {
-                Color spotcolor2 = GetColorAt(pointcheck);
-
-                if (Math.Abs(spotcolor.G - spotcolor2.G) > 80)
-                {
-                    if (spotcolor2.G != 0) change = true;
-                }
-
                 SendClick(pointclick);
 
                 Task.Delay(250).Wait();
             }
+
+            Task.Delay(2000).Wait();
         }
 
         public static void VerifyControllerInput()

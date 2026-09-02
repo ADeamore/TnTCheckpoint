@@ -191,6 +191,35 @@ namespace TnTCheckpoint
             }
         }
 
+        public static bool CheckText(string inputtext, Point coordinatepointstart, Point coordinatepointend)
+        {
+            int width = d2window.Right - d2window.Left;
+            int height = d2window.Bottom - d2window.Top;
+            int iconwidth = coordinatepointend.X - coordinatepointstart.X;
+            int iconheight = coordinatepointend.Y - coordinatepointstart.Y;
+            int xpos = coordinatepointstart.X;
+            int ypos = coordinatepointstart.Y;
+
+            Bitmap bmpScreenshot = new Bitmap(iconwidth, iconheight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            Graphics g = Graphics.FromImage(bmpScreenshot);
+
+            g.CopyFromScreen(xpos, ypos, 0, 0, new System.Drawing.Size(iconwidth, iconheight));
+
+            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.GrayScaleEffect());
+            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(-25, 0));
+            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BrightnessContrastEffect(0, 100));
+            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.BlurEffect(2, false));
+            bmpScreenshot.ApplyEffect(new System.Drawing.Imaging.Effects.InvertEffect()); ;
+
+            string ocrstring = GetText(bmpScreenshot).ToLower().Replace("(", "").Replace(")", "").Replace("'", "").Replace(":", "").Replace("\n", "");
+            bmpScreenshot.Dispose();
+
+            Task.Delay(33).Wait();
+
+            if (StringDifference(inputtext, ocrstring) > .9) return true;
+            return false;
+        }
+
         public static double StringDifference(string s1, string s2)
         {
             char[] c1 = s1.ToLower().ToArray();
