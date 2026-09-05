@@ -1239,6 +1239,25 @@ namespace TnTCheckpoint
                 {
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
                     GRABBINGCHECKPOINT = false;
+
+                    if (CheckIfOrbitTextBox() != "")
+                    {
+                        //make sure im in controller mode
+                        Controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.RightThumb, true);
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.RightThumb, false);
+                        Task.Delay(101).Wait();
+
+                        Controller.SetButtonState(Xbox360Button.B, true);
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.B, false);
+                        Task.Delay(101).Wait();
+                    }
+
                     ReturnToCharSelectFast();
 
                     UpdateStatusBar("Idle...", UserStatusType.Online);
