@@ -259,7 +259,24 @@ namespace TnTCheckpoint
                 statussubtext = "Waiting for character select...";
                 UpdateTextDisplay();
                 Task.Delay(1000).Wait();
-                AwaitText("ExittoDesktop", ConvertAspectRatioCoords(5.15625, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                //AwaitText("ExittoDesktop", ConvertAspectRatioCoords(5.15625, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75));
+                while (!CheckText("ExittoDesktop", ConvertAspectRatioCoords(5.15625, 95.972222222), ConvertAspectRatioCoords(14.0625, 98.75)))
+                {
+                    if(CheckText("rejoinactivity",ConvertAspectRatioCoords(34.765625, 41.944444444),ConvertAspectRatioCoords(62.9296875, 46.52777777)))
+                    {
+                        //got rejoin activity prompt
+                        VerifyControllerInput();
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.B, true);
+                        Task.Delay(101).Wait();
+                        Controller.SetButtonState(Xbox360Button.B, false);
+                        Task.Delay(101).Wait();
+                        SendClick(new Point(50, 50));
+                        Task.Delay(101).Wait();
+                        SendClick(new Point(50, 50));
+                    }
+                    Task.Delay(101).Wait();
+                }
                 Task.Delay(1000).Wait();
 
                 InputSimulator sim = new InputSimulator();
