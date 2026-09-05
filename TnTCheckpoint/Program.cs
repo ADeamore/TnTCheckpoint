@@ -8,6 +8,7 @@ using static TnTCheckpoint.DebugCommunication;
 using static TnTCheckpoint.StartupAndInitialization;
 using static TnTCheckpoint.Macros;
 using static TnTCheckpoint.Bookkeeping;
+using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 
 namespace TnTCheckpoint
 {
@@ -363,6 +364,13 @@ namespace TnTCheckpoint
                                     }
                                 }
                             }
+                        }
+                        //672 570, 803 600
+                        if(CheckText("errorcode",ConvertAspectRatioCoords(35, 52.7777777),ConvertAspectRatioCoords(41.82291666, 55.555555555)))
+                        {
+                            DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Unexpected error code. Restarting program to resolve.").Wait();
+                            //error code. kill game process and treat it like a crash.
+                            D2Process.Kill();
                         }
                     }
                     Thread.Sleep(500);
