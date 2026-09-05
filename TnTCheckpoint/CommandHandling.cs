@@ -1238,7 +1238,7 @@ namespace TnTCheckpoint
                 if (!worked)
                 {
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Looks like your fireteam is currently unavailable. Returning to idling.");
-                    GRABBINGCHECKPOINT = false;
+                    HOLDINGLOAD = false;
 
                     if (CheckIfOrbitTextBox() != "")
                     {
