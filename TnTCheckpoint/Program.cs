@@ -333,46 +333,48 @@ namespace TnTCheckpoint
                                 //push forward afk timer so once im done doing things it resumes with generous leeway.
                                 FlagAFKTimer = DateTime.Now.AddMinutes(55);
                             }
-
-                            //close button stuff
-                            if (!CloseButtonPressed)
-                            {
-                                if (Keyboard.IsPressed(0xA5))
-                                {
-                                    oldstatus = statussubtext;
-                                    CloseButtonPressed = true;
-                                    CloseButtonKillTime = DateTime.Now.AddSeconds(5);
-                                }
-                            }
-                            else
-                            {
-                                if (!Keyboard.IsPressed(0xA5))
-                                {
-                                    statussubtext = oldstatus;
-                                    UpdateTextDisplay();
-                                    CloseButtonPressed = false;
-                                    CloseButtonKillTime = DateTime.MaxValue;
-                                }
-                                else
-                                {
-                                    statussubtext = "Killing process... " + Math.Ceiling((CloseButtonKillTime - DateTime.Now).TotalSeconds);
-                                    UpdateTextDisplay();
-                                    if (DateTime.Now > CloseButtonKillTime)
-                                    {
-                                        DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
-                                        KillProcess();
-                                    }
-                                }
-                            }
-                        }
-                        //672 570, 803 600
-                        if(CheckText("errorcode",ConvertAspectRatioCoords(35, 52.7777777),ConvertAspectRatioCoords(41.82291666, 55.555555555)))
-                        {
-                            DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Unexpected error code. Restarting program to resolve.").Wait();
-                            //error code. kill game process and treat it like a crash.
-                            D2Process.Kill();
                         }
                     }
+
+                    //close button stuff
+                    if (!CloseButtonPressed)
+                    {
+                        if (Keyboard.IsPressed(0xA5))
+                        {
+                            oldstatus = statussubtext;
+                            CloseButtonPressed = true;
+                            CloseButtonKillTime = DateTime.Now.AddSeconds(5);
+                        }
+                    }
+                    else
+                    {
+                        if (!Keyboard.IsPressed(0xA5))
+                        {
+                            statussubtext = oldstatus;
+                            UpdateTextDisplay();
+                            CloseButtonPressed = false;
+                            CloseButtonKillTime = DateTime.MaxValue;
+                        }
+                        else
+                        {
+                            statussubtext = "Killing process... " + Math.Ceiling((CloseButtonKillTime - DateTime.Now).TotalSeconds);
+                            UpdateTextDisplay();
+                            if (DateTime.Now > CloseButtonKillTime)
+                            {
+                                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Kill command recieved from host computer. Going offline... :(").Wait();
+                                KillProcess();
+                            }
+                        }
+                    }
+
+                    //672 570, 803 600
+                    if (CheckText("errorcode", ConvertAspectRatioCoords(35, 52.7777777), ConvertAspectRatioCoords(41.82291666, 55.555555555)))
+                    {
+                        DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Unexpected error code. Restarting program to resolve.").Wait();
+                        //error code. kill game process and treat it like a crash.
+                        D2Process.Kill();
+                    }
+
                     Thread.Sleep(500);
                 }
             }).Start();
