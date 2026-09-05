@@ -290,6 +290,9 @@ namespace TnTCheckpoint
                 VERIFYING = false;
                 CLEANINGCHECKPOINTS = true;
 
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
+
                 while (AFKCYCLE)
                 {
                 }
@@ -474,6 +477,9 @@ namespace TnTCheckpoint
 
                 TRANSFERINGCHECKPOINT = true;
 
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
+
                 while (AFKCYCLE)
                 {
                 }
@@ -557,6 +563,9 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!LaunchAndHold... Making sure the command is viable.", UserStatusType.Idle);
 
                 TRANSFERINGCHECKPOINT = true;
+
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
 
                 while (AFKCYCLE)
                 {
@@ -810,6 +819,9 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!FarmCheckpoint... Validating command.", UserStatusType.Idle);
 
                 FARMMODE = true;
+
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
 
                 while (AFKCYCLE)
                 {
@@ -1076,6 +1088,9 @@ namespace TnTCheckpoint
 
                 DELETINGCHECKPOINT = true;
 
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
+
                 while (AFKCYCLE)
                 {
                 }
@@ -1178,6 +1193,9 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!HoldLoad... Validating command.", UserStatusType.Idle);
 
                 HOLDINGLOAD = true;
+
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
 
                 while (AFKCYCLE)
                 {
@@ -1336,6 +1354,9 @@ namespace TnTCheckpoint
 
                 GRABBINGCHECKPOINT = true;
 
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
+
                 while (AFKCYCLE)
                 {
                 }
@@ -1455,6 +1476,9 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!GrabCheckpointAndConfirm... Validating command.", UserStatusType.Idle);
 
                 GRABBINGCHECKPOINT = true;
+
+                WorkingDiscordName = message.Author.Username;
+                if (message.Author.GlobalName != null) WorkingDiscordName = message.Author.GlobalName;
 
                 while (AFKCYCLE)
                 {
