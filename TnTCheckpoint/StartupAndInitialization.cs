@@ -107,32 +107,10 @@ namespace TnTCheckpoint
                 //compare intended reset to now.
                 if (temp > now)
                 {
+
                     //reset didnt happen yet. update the recorded time.
                     File.Delete(path + "\\resettimer.ini");
                     File.WriteAllText(path + "\\resettimer.ini", now.Ticks.ToString());
-                    //load all data
-                    //save all as one big string. separate each activity with a _. separate each checkpoint with a ~, separate checkpoint from character index with a .
-                    if (File.Exists(path + "\\checkpoints.ini"))
-                    {
-                        string output = File.ReadAllText(path + "\\checkpoints.ini");
-                        foreach (string raid in output.Split("-"))
-                        {
-                            string raidname = "";
-                            foreach (string checkpoint in raid.Split("~"))
-                            {
-                                if (raidname == "")
-                                {
-                                    raidname = checkpoint;
-                                }
-                                else
-                                {
-                                    string cpname = checkpoint.Split(".")[0];
-                                    int cpindex = int.Parse(checkpoint.Split(".")[1]);
-                                    if (checkpoint != "") Checkpoints[raidname].Add(cpname, cpindex);
-                                }
-                            }
-                        }
-                    }
 
                     if (File.Exists(path + "\\activities.ini")) //same formatting as above. each activity type is separated with an _, each activity is separated with a ~
                     {
@@ -154,6 +132,30 @@ namespace TnTCheckpoint
                 else
                 {
                     //reset happened. Handle this later once we're on character select.
+                }
+
+                //load all data
+                //save all as one big string. separate each activity with a _. separate each checkpoint with a ~, separate checkpoint from character index with a .
+                if (File.Exists(path + "\\checkpoints.ini"))
+                {
+                    string output = File.ReadAllText(path + "\\checkpoints.ini");
+                    foreach (string raid in output.Split("-"))
+                    {
+                        string raidname = "";
+                        foreach (string checkpoint in raid.Split("~"))
+                        {
+                            if (raidname == "")
+                            {
+                                raidname = checkpoint;
+                            }
+                            else
+                            {
+                                string cpname = checkpoint.Split(".")[0];
+                                int cpindex = int.Parse(checkpoint.Split(".")[1]);
+                                if (checkpoint != "") Checkpoints[raidname].Add(cpname, cpindex);
+                            }
+                        }
+                    }
                 }
 
             }
