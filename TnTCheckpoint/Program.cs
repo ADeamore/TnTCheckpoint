@@ -292,7 +292,7 @@ namespace TnTCheckpoint
                         else
                         {
                             //reset stuff
-                            if (DateTime.Now > D2RESETTIME)
+                            if (CheckReset())
                             {
                                 //reset has happened. need to restart everything to just scrub the surface clean and reset.
 
