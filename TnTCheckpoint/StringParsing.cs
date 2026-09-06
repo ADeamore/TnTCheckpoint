@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.Rest;
 using static TnTCheckpoint.Bookkeeping;
 using static TnTCheckpoint.ConstantsAndGlobals;
 using static TnTCheckpoint.DebugCommunication;
@@ -216,6 +217,7 @@ namespace TnTCheckpoint
                 
             foreach (string feat in inputchunk.Split(":")[1].Split(","))
             {
+                if (feat == "") continue;
                 if (!possiblefeats.Contains(feat.ToLower()))
                 {
                     DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "One or more of the feats you requested aren't in my system. Legal feats include: \nToken, Phase, Battalions, Challenges, and Cutthroat.");
@@ -389,6 +391,64 @@ namespace TnTCheckpoint
                 UpdateStatusBar("Idle...", UserStatusType.Online);
                 return 0;
             }
+        }
+
+        public static string ConvertActivShorthandToFullName(string activitykey) 
+        {
+            switch (activitykey)
+            {
+                case "CE":
+                    return "Crota's End";
+                case "DSC":
+                    return "Deepstone Crypt";
+                case "DP":
+                    return "The Desert Perpetual";
+                case "DPE":
+                    return "The Desert Perpetual (Epic)";
+                case "SE":
+                    return "Salvation's Edge";
+                case "RON":
+                    return "Root of Nightmares";
+                case "KF":
+                    return "Kingsfall";
+                case "VOW":
+                    return "Vow of the Disciple";
+                case "VOG":
+                    return "Vault of Glass";
+                case "GOS":
+                    return "Garden of Salvation";
+                case "LW":
+                    return "Last Wish";
+                case "WR":
+                    return "Warlord's Ruin";
+                case "PIT":
+                    return "Pit of Herasy";
+                case "EQ":
+                    return "Equilibrium";
+                case "SD":
+                    return "Sundered Doctrine";
+                case "VH":
+                    return "Vesper's Host";
+                case "GOTD":
+                    return "Ghosts of the Deep";
+                case "SOTW":
+                    return "Spire of the Watcher";
+                case "D":
+                    return "Duality";
+                case "GOA":
+                    return "Grasp of Avarice";
+                case "PR":
+                    return "Prophecy";
+                case "ST":
+                    return "The Shattered Throne";
+                case "CR":
+                    return "Pantheon Calus Resplendant";
+                case "MS":
+                    return "Pantheon Morgeth Surpassing";
+                case "GAUNTLET":
+                    return "Pantheon Insurrection Prime";
+            }
+            return "";
         }
     }
 

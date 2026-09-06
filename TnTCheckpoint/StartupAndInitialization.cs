@@ -16,6 +16,9 @@ using static TnTCheckpoint.DebugCommunication;
 using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.CommandHandling;
 using static TnTCheckpoint.Macros;
+using NetCord.Services.ApplicationCommands;
+using NetCord.Services;
+using NetCord.Rest;
 
 namespace TnTCheckpoint
 {
@@ -150,59 +153,7 @@ namespace TnTCheckpoint
                 }
                 else
                 {
-                    //reset has happened, need to wipe everything, and save the new time.
-                    if (File.Exists(path + "\\checkpoints.ini"))
-                    {
-                        string output = File.ReadAllText(path + "\\checkpoints.ini");
-                        foreach (string raid in output.Split("-"))
-                        {
-                            string raidname = "";
-                            foreach (string checkpoint in raid.Split("~"))
-                            {
-                                if (raidname == "")
-                                {
-                                    raidname = checkpoint;
-                                }
-                                else
-                                {
-                                    if (NoResetActivities.Contains(raidname))
-                                    {
-                                        string cpname = checkpoint.Split(".")[0];
-                                        int cpindex = int.Parse(checkpoint.Split(".")[1]);
-                                        if (checkpoint != "") Checkpoints[raidname].Add(cpname, cpindex);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (File.Exists(path + "\\checkpoints.ini")) File.Delete(path + "\\checkpoints.ini");
-                    if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
-                    File.Delete(path + "\\resettimer.ini");
-                    File.WriteAllText(path + "\\resettimer.ini", now.Ticks.ToString());
-
-                    //figure out when next reset is to record that for later.
-                    bool changed = false;
-                    temp = DateTime.Now.ToUniversalTime();
-                    while (temp.Minute != 0)
-                    {
-                        int gap = 60 - temp.Minute;
-                        temp = temp.AddMinutes(gap);
-                        changed = true;
-                    }
-                    while (temp.Hour != 17)
-                    {
-                        temp = temp.AddHours(1);
-                        changed = true;
-                    }
-                    while (temp.DayOfWeek != DayOfWeek.Tuesday)
-                    {
-                        temp = temp.AddDays(1);
-                        changed = true;
-                    }
-                    if (!changed) temp = temp.AddDays(7);
-
-                    D2RESETTIME = temp;
+                    //reset happened. Handle this later once we're on character select.
                 }
 
             }
@@ -214,18 +165,64 @@ namespace TnTCheckpoint
                 if (File.Exists(path + "\\checkpoints.ini")) File.Delete(path + "\\checkpoints.ini");
                 if (File.Exists(path + "\\activities.ini")) File.Delete(path + "\\activities.ini");
             }
-        } //TODO dont scrub checkpoints for activities that dont lose their checkpoints. 
+        }
 
         public static async void InitializeBot()
         {
             DiscordClient = new(new BotToken(DiscordDevToken), new GatewayClientConfiguration()
             {
                 Intents = GatewayIntents.GuildMessages | GatewayIntents.DirectMessages | GatewayIntents.MessageContent,
-                Logger = new ConsoleLogger(),
+                //Logger = new ConsoleLogger(),
             });
 
-            // Add the handler to handle commands
+            SlashCommandService = new();
+            SlashCommandService.AddModule(typeof(SlashCommand));
+
+            // Add the handler to handle exlimation commands
             DiscordClient.MessageCreate += HandleMessages;
+
+            // Add the handler to handle slash command interactions
+            DiscordClient.InteractionCreate += async interaction =>
+            {
+                // Check if the interaction is an application command interaction
+                if (interaction is SlashCommandInteraction applicationCommandInteraction)
+                {
+
+                    // Execute the command
+                    var result = await SlashCommandService.ExecuteAsync(new SlashCommandContext(applicationCommandInteraction, DiscordClient));
+
+                    // Check if the execution failed
+                    if (result is not IFailResult failResult)
+                        return;
+
+                    // Return the error message to the user if the execution failed
+                    try
+                    {
+                        await interaction.SendResponseAsync(InteractionCallback.Message(failResult.Message));
+                    }
+                    catch
+                    {
+                    }
+                }
+                if(interaction is AutocompleteInteraction autocompleteInteraction)
+                {
+                    // Execute the command
+                    var result = await SlashCommandService.ExecuteAutocompleteAsync(new AutocompleteInteractionContext(autocompleteInteraction, DiscordClient));
+
+                    // Check if the execution failed
+                    if (result is not IFailResult failResult)
+                        return;
+
+                    // Return the error message to the user if the execution failed
+                    try
+                    {
+                        await interaction.SendResponseAsync(InteractionCallback.Message(failResult.Message));
+                    }
+                    catch
+                    {
+                    }
+                }
+            };
 
             //start the client
             await DiscordClient.StartAsync();
@@ -288,9 +285,9 @@ namespace TnTCheckpoint
                 statusheader = "Launch Conditions:";
                 statussubtext = "Character change menu found, checking if reset has happened since last launch.";
                 UpdateTextDisplay();
-                //AwaitColorChange(15.82, 29.17, 2); //coords for colors behind the player character.
+
                 Task.Delay(3000).Wait();
-                if (!FlagGotActivityOrder)
+                if (!FlagGotActivityOrder) //reset happened. clean everything up.
                 {
                     UpdateStatusBar("Initializing... Grabbing activity order.", UserStatusType.DoNotDisturb);
                     GetToDirectorForActivityCoords();
@@ -306,6 +303,9 @@ namespace TnTCheckpoint
                 statusheader = "Idle...";
                 statussubtext = "";
                 UpdateTextDisplay();
+
+                await SlashCommandService.RegisterCommandsAsync(DiscordClient.Rest, DiscordClient.Id);
+
                 DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Now up and running. o7");
 
             }).Start();
