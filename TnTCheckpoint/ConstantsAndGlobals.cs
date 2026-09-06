@@ -5,6 +5,7 @@ using System.Text;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using NetCord.Gateway;
+using NetCord.Services.ApplicationCommands;
 using static TnTCheckpoint.DLLImportsStructsAndEnums;
 
 namespace TnTCheckpoint
@@ -54,6 +55,7 @@ namespace TnTCheckpoint
 
         //discord bot handling
         public static GatewayClient DiscordClient;
+        public static ApplicationCommandService<SlashCommandContext,AutocompleteInteractionContext> SlashCommandService;
         public static string DiscordDevToken = "";
         public static ulong DiscordChannelID = 0;
 
@@ -67,7 +69,6 @@ namespace TnTCheckpoint
         public static bool runningupdatedetection = false;
 
         //recordkeeping for ingame names/activities/etc
-        public static string[] NoResetActivities = {"masterRON", "masterKF", "masterVOW", "masterGOTD", "masterWR", "masterSOTW", "masterD", "masterGOA"};
         public static List<string> RaidActivityOrder = new List<string>();
         public static List<string> DungeonActivityOrder = new List<string>();
         public static List<string> PantheonActivityOrder = new List<string>();
