@@ -826,6 +826,7 @@ namespace TnTCheckpoint
 
                 ReturnToCharSelectFast();
             }
+            SaveCheckpoints();
         }
 
         public static void SpamLaunchButtonUntilWorks()
