@@ -594,6 +594,36 @@ namespace TnTCheckpoint
             if (master) SelectMaster();
         }
 
+        public static bool VerifyCheckpointNoSave()
+        {
+            //highlight over the play button just to have a consistent location for the checkpoint on screen.
+            SetCursorPos(ConvertAspectRatioCoords(75.117, 83.75).X, ConvertAspectRatioCoords(75.117, 83.75).Y);
+
+            Task.Delay(200).Wait();
+
+            Color checkpoint = GetColorAt(ConvertAspectRatioCoords(66.640625, 77.0138889));
+
+
+            int avg = checkpoint.R + checkpoint.G + checkpoint.B;
+            avg = avg / 3;
+
+            List<int> colorlist = new List<int>();
+            colorlist.Add(checkpoint.R);
+            colorlist.Add(checkpoint.G);
+            colorlist.Add(checkpoint.B);
+            colorlist.Sort();
+            int gap = colorlist.Last() - colorlist.First();
+
+            if (avg > 200 & gap < 10) //making sure its some level of white
+            {
+                //i got the checkpoint
+
+                return true;
+            }
+
+            return false;
+        }
+
         public static bool VerifyCheckpointAndSave(int charslot, CommandLayout output)
         {
 
@@ -660,17 +690,6 @@ namespace TnTCheckpoint
                 int page = 0;
 
                 List<string> activ = order;
-
-                foreach (string activity in Checkpoints.Keys)
-                {
-                    foreach (int output in Checkpoints[activity].Values)
-                    {
-                        if (output == i)
-                        {
-                            activ.Remove(activity);
-                        }
-                    }
-                }
 
                 foreach (string activity in activ)
                 {
@@ -747,7 +766,36 @@ namespace TnTCheckpoint
                     if (activity.Contains("master")) SelectMaster();
                     SendClick(new Point(50, 50));
 
-                    RemoveCheckpoint();
+                    if (VerifyCheckpointNoSave())
+                    {
+                        if (Checkpoints[activity].ContainsValue(i))
+                        {
+                            //actually has this checkpoint
+                        }
+                        else
+                        {
+                            RemoveCheckpoint();
+                        }
+                    }
+                    else
+                    {
+                        if (Checkpoints[activity].ContainsValue(i))
+                        {
+                            //has this checkpoint but shouldn't
+                            for(int j = 0; j < Checkpoints[activity].Count; j++)
+                            {
+                                if (Checkpoints[activity][Checkpoints[activity].Keys.ToArray()[j]] == i)
+                                {
+                                    Checkpoints[activity].Remove(Checkpoints[activity].Keys.ToArray()[j]);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //all good. no checkpoint, no storage.
+                        }
+                    }
+
                     Task.Delay(101).Wait();
 
                     Controller.SetButtonState(Xbox360Button.B, true);
