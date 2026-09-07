@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Http;
+using System.Security.Policy;
 using System.Text.RegularExpressions;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 using NetCord;
@@ -1144,7 +1145,23 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!DeleteCheckpoint... Removing checkpoint.", UserStatusType.Idle);
                 RemoveCheckpoint();
 
-                Checkpoints[output.activitykey].Remove(output.checkpointname);
+                bool deleted = false;
+                foreach (string key in Checkpoints[output.activitykey].Keys)
+                {
+                    if (key.ToLower() == output.checkpointname.ToLower())
+                    {
+                        Checkpoints[output.activitykey].Remove(key);
+                        deleted = true;
+                        break;
+                    }
+                }
+
+                if (!deleted)
+                {
+                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I can't seem to delete that checkpoint, despite knowing I have it. I'm not sure how this happened.");
+                    return;
+                }
+
                 SaveCheckpoints();
 
                 UpdateStatusBar("!DeleteCheckpoint... Returning to character select...", UserStatusType.Idle);
@@ -3078,7 +3095,7 @@ namespace TnTCheckpoint
                 {
                     if (key.ToLower() == output.checkpointname.ToLower())
                     {
-                        Checkpoints[output.checkpointname].Remove(key);
+                        Checkpoints[output.activitykey].Remove(key);
                         deleted = true;
                         break;
                     }
@@ -3165,6 +3182,15 @@ namespace TnTCheckpoint
             {
                 DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I'm not currently verifying a command...");
             }
+        }
+
+
+        [SlashCommand("cancel", "Cancels command verification.")]
+        public void SlashCommandCancel()
+        {
+            VERIFYING = false;
+            VERIFYINGLEVEL = 0;
+            Context.Interaction.SendResponseAsync(InteractionCallback.Message("Verification cancelled."));
         }
 
 
