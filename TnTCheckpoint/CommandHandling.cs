@@ -904,6 +904,7 @@ namespace TnTCheckpoint
                         FARMMODE = false;
                         break;
                     }
+                    if (!FARMMODE) break;
 
                     UpdateStatusBar("!FarmCheckpoint... Join detected, launching momentarily.", UserStatusType.Idle);
                     DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Launching activity as soon as it lets me...");
