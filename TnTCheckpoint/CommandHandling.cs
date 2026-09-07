@@ -935,7 +935,7 @@ namespace TnTCheckpoint
                     int i = 1;
                     foreach (string checkpointname in Checkpoints[key].Keys)
                     {
-                        checkstr = checkstr + " - [" + i + "]" + checkpointname + "\n";
+                        checkstr = checkstr + " - [" + Checkpoints[key][checkpointname] + "]" + checkpointname + "\n";
                         i++;
                     }
 
