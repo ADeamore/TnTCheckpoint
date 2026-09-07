@@ -50,7 +50,7 @@ namespace TnTCheckpoint
             
             Task.Delay(101).Wait();
             SendClick(ConvertAspectRatioCoords(84.21, 23.26));
-            Task.Delay(202).Wait();
+            Task.Delay(500).Wait();
 
             Point selectpos = ConvertAspectRatioCoords(89.2578125, 4.4444444444);
             SetCursorPos(selectpos.X, selectpos.Y);
