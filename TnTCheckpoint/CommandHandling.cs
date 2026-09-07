@@ -2160,6 +2160,7 @@ namespace TnTCheckpoint
                 }
                 VERIFYING = false;
                 CLEANINGCHECKPOINTS = true;
+                UpdateStatusBar("!CleanCheckpoints", UserStatusType.DoNotDisturb);
 
                 WorkingDiscordName = Context.User.Username;
                 if (Context.User.GlobalName != null) WorkingDiscordName = Context.User.GlobalName;

@@ -12,6 +12,7 @@ using static TnTCheckpoint.DebugCommunication;
 using static TnTCheckpoint.DLLImportsStructsAndEnums;
 using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.Bookkeeping;
+using static TnTCheckpoint.StringParsing;
 using Color = System.Drawing.Color;
 
 namespace TnTCheckpoint
@@ -774,6 +775,11 @@ namespace TnTCheckpoint
                         }
                         else
                         {
+                            //has a checkpoint in game but shouldn't
+                            string contstring = "";
+                            if (activity.Contains("master")) contstring = "Master " + ConvertActivShorthandToFullName(activity.Replace("master", ""));
+                            else contstring = ConvertActivShorthandToFullName(activity);
+                            DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Removing unrecorded checkpoint found on " + contstring);
                             RemoveCheckpoint();
                         }
                     }
@@ -786,7 +792,12 @@ namespace TnTCheckpoint
                             {
                                 if (Checkpoints[activity][Checkpoints[activity].Keys.ToArray()[j]] == i)
                                 {
+                                    string contstring = "";
+                                    if (activity.Contains("master")) contstring = "Master " + ConvertActivShorthandToFullName(activity.Replace("master", ""));
+                                    else contstring = ConvertActivShorthandToFullName(activity);
+                                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Removing record of missing checkpoint on: " + contstring + " with the name of \"" + Checkpoints[activity].Keys.ToArray()[j] + "\"");
                                     Checkpoints[activity].Remove(Checkpoints[activity].Keys.ToArray()[j]);
+                                    break;
                                 }
                             }
                         }
@@ -797,6 +808,8 @@ namespace TnTCheckpoint
                     }
 
                     Task.Delay(101).Wait();
+
+                    VerifyControllerInput();
 
                     Controller.SetButtonState(Xbox360Button.B, true);
                     Task.Delay(101).Wait();
