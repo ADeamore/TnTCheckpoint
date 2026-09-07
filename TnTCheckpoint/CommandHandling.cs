@@ -350,6 +350,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
@@ -755,8 +756,24 @@ namespace TnTCheckpoint
                 return;
             }
 
+            bool deleted = false;
+            foreach (string key in Checkpoints[activitykey].Keys)
+            {
+                if (key.ToLower() == oldname.ToLower())
+                {
+                    Checkpoints[activitykey].Remove(key);
+                    deleted = true;
+                    break;
+                }
+            }
+
+            if (!deleted)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I can't seem to delete that checkpoint to create a new instance of it. I'm not sure how this happened.");
+                return;
+            }
+
             Checkpoints[activitykey].Add(newname, slot);
-            Checkpoints[activitykey].Remove(oldname);
             SaveCheckpoints();
 
             DiscordClient.Rest.SendMessageAsync(message.ChannelId, "Successfully renamed " + oldname + " to " + newname + ".");
@@ -1375,6 +1392,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
@@ -1498,6 +1516,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
@@ -2213,6 +2232,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
@@ -2580,8 +2600,24 @@ namespace TnTCheckpoint
                 return;
             }
 
+            bool deleted = false;
+            foreach(string key in Checkpoints[activitykey].Keys)
+            {
+                if(key.ToLower() == oldname.ToLower())
+                {
+                    Checkpoints[activitykey].Remove(key);
+                    deleted = true;
+                    break;
+                }
+            }
+
+            if (!deleted)
+            {
+                DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I can't seem to delete that checkpoint to create a new instance of it. I'm not sure how this happened.");
+                return;
+            }
+
             Checkpoints[activitykey].Add(newname, slot);
-            Checkpoints[activitykey].Remove(oldname);
             SaveCheckpoints();
 
             DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "Successfully renamed " + oldname + " to " + newname + ".");
@@ -3037,7 +3073,23 @@ namespace TnTCheckpoint
                 UpdateStatusBar("!DeleteCheckpoint... Removing checkpoint.", UserStatusType.Idle);
                 RemoveCheckpoint();
 
-                Checkpoints[output.activitykey].Remove(output.checkpointname);
+                bool deleted = false;
+                foreach (string key in Checkpoints[output.activitykey].Keys)
+                {
+                    if (key.ToLower() == output.checkpointname.ToLower())
+                    {
+                        Checkpoints[output.checkpointname].Remove(key);
+                        deleted = true;
+                        break;
+                    }
+                }
+
+                if (!deleted)
+                {
+                    DiscordClient.Rest.SendMessageAsync(DiscordChannelID, "I can't seem to delete that checkpoint, despite knowing I have it. I'm not sure how this happened.");
+                    return;
+                }
+
                 SaveCheckpoints();
 
                 UpdateStatusBar("!DeleteCheckpoint... Returning to character select...", UserStatusType.Idle);
@@ -3342,6 +3394,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
@@ -3494,6 +3547,7 @@ namespace TnTCheckpoint
                 }
 
                 GRABBINGCHECKPOINT = CheckOverlappingCheckpointName(output.checkpointname, output.activitykey, "FlyInCheckpointTransfer");
+                if (!GRABBINGCHECKPOINT) return;
                 GRABBINGCHECKPOINT = CheckCheckpointsFull(output.activitykey);
                 if (!GRABBINGCHECKPOINT) return;
 
