@@ -3,22 +3,23 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Windows.Shapes;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Logging;
+using NetCord.Rest;
+using NetCord.Services;
+using NetCord.Services.ApplicationCommands;
 using WindowsInput;
 using WindowsInput.Native;
-using static TnTCheckpoint.ConstantsAndGlobals;
-using static TnTCheckpoint.DLLImportsStructsAndEnums;
-using static TnTCheckpoint.DebugCommunication;
-using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 using static TnTCheckpoint.CommandHandling;
+using static TnTCheckpoint.ConstantsAndGlobals;
+using static TnTCheckpoint.DebugCommunication;
+using static TnTCheckpoint.DLLImportsStructsAndEnums;
 using static TnTCheckpoint.Macros;
-using NetCord.Services.ApplicationCommands;
-using NetCord.Services;
-using NetCord.Rest;
+using static TnTCheckpoint.ScreenspaceInteractionsAndReading;
 
 namespace TnTCheckpoint
 {
@@ -291,9 +292,14 @@ namespace TnTCheckpoint
                 Task.Delay(3000).Wait();
                 if (!FlagGotActivityOrder) //reset happened. clean everything up.
                 {
+                    string path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                    File.Delete(path + "\\resettimer.ini");
+                    File.WriteAllText(path + "\\resettimer.ini", DateTime.Now.ToUniversalTime().Ticks.ToString());
+
                     UpdateStatusBar("Initializing... Grabbing activity order.", UserStatusType.DoNotDisturb);
                     GetToDirectorForActivityCoords();
                     UpdateStatusBar("Init, Checkpoint Cleanup...", UserStatusType.DoNotDisturb);
+
                     CleanCheckpoints();
                 }
                 FlagGotActivityOrder = true;
